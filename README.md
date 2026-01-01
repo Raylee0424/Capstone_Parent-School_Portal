@@ -31,12 +31,12 @@
 
 ## 🛠️ Tech Stack
 
-* [React](https://reactjs.org/) - UI Library
-* [TypeScript](https://www.typescriptlang.org/) - Static Type Checking
-* [Vite](https://vitejs.dev/) - Build Tool
-* [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
-* [Shadcn UI](https://ui.shadcn.com/) - Re-usable components built with Radix UI and Tailwind
-* [React Router Dom](https://reactrouter.com/) - Navigation
+* <a href="https://reactjs.org/" target="_blank">React</a> - UI Library
+* <a href="https://www.typescriptlang.org/" target="_blank">TypeScript</a> - Static Type Checking
+* <a href="https://vitejs.dev/" target="_blank">Vite</a> - Build Tool
+* <a href="https://tailwindcss.com/" target="_blank">Tailwind CSS</a> - Utility-first CSS framework
+* <a href="https://ui.shadcn.com/" target="_blank">Shadcn UI</a> - Re-usable components built with Radix UI and Tailwind
+* <a href="https://reactrouter.com/" target="_blank">React Router Dom</a> - Navigation
 
 ---
 
