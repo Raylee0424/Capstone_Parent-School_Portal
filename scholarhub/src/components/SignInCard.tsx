@@ -12,7 +12,7 @@ export const SignInCard = () => {
 	}
 	
 	return (
-		<div className="flex flex-col items-center pt-20 bg-gray-50 min-h-screen">
+		<div className="flex flex-col items-center pt-20">
 			<div className="w-full max-w-lg rounded-2xl bg-[#f4f4c0] p-12 shadow-lg">
 				<div className="mb-8 flex items-center gap-4">
 					<div className="relative h-20 w-20 shrink-0">
@@ -46,7 +46,7 @@ export const SignInCard = () => {
 
 					<div className="text-sm">
 						<span className="text-gray-900">Forgot Password? </span>
-						<a href="/login" className="text-blue-600 hover:underline">
+						<a href="/forgotpassword" className="text-blue-600 hover:underline">
 							Click Here
 						</a>
 					</div>
@@ -54,7 +54,7 @@ export const SignInCard = () => {
 					<div className="flex justify-center pt-4">
 						<Button
 							type="submit"
-							className="h-12 rounded-full bg-[#4a9d5f] px-12 text-base font-semibold text-white hover:bg-[#3d8550] transition-colors"
+							className="h-12 rounded-full bg-[#4a9d5f] px-12 text-[32px] font-semibold text-white hover:bg-[#3d8550] transition-colors"
 						>
 							Sign In
 						</Button>

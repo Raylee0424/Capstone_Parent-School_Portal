@@ -1,9 +1,12 @@
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { AboutUsDropdown } from "./AboutUsDropdown"
+import { useLocation } from "react-router-dom"
 
 export const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const location = useLocation();
+  const isRegisterPage = location.pathname === '/register';
 
   return (
     <header className="bg-[#d4d433] px-6 py-4">
@@ -42,12 +45,12 @@ export const Navbar = () => {
         </div>
         <div className="flex items-center gap-4">
           <Button
-            className="h-10 w-32 rounded-full bg-[#4a9d5f] px-12 text-base text-[20px] font-semibold text-white hover:bg-[#3d8550] transition-colors ">
-            Login
+            className={`h-10 w-32 rounded-full px-12 text-base text-[20px] font-semibold transition-colors ${isRegisterPage ? 'bg-white text-[#4a9d5f] hover:bg-[#e0e0e0]' : 'bg-[#4a9d5f] text-white hover:bg-[#3d8550]'}`}>
+            <a href="/login">Login</a>
           </Button>
           <Button
-            className="h-10 w-32 rounded-full bg-white px-12 text-base text-[20px] font-semibold text-[#4a9d5f] hover:bg-[#e0e0e0] transition-colors ">
-            Register
+            className={`h-10 w-32 rounded-full px-12 text-base text-[20px] font-semibold transition-colors ${isRegisterPage ? 'bg-[#4a9d5f] text-white hover:bg-[#3d8550]' : 'bg-white text-[#4a9d5f] hover:bg-[#e0e0e0]'}`}>
+              <a href="/register">Register</a>
           </Button>
         </div>
       </div>
