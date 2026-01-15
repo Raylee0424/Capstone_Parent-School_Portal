@@ -1,10 +1,11 @@
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 
 interface EventCardProps {
   title: string
   description: string
   subtitle: string
   backgroundColor?: string
+  imageUrl?: string
 }
 
 export default function EventCard({
@@ -12,25 +13,28 @@ export default function EventCard({
   description,
   subtitle,
   backgroundColor = "bg-emerald-500",
+  imageUrl = "https://images.unsplash.com/photo-1604076850742-4c7221f3101b?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
 }: EventCardProps) {
   return (
-    <Card className="overflow-hidden w-full">
-      <CardContent className="p-0">
-        {/* Image Placeholder */}
-        <div className="w-full aspect-video bg-gray-200 flex items-center justify-center">
-          <div className="text-center text-gray-400">
-            <p className="text-lg font-medium">Image Placeholder</p>
-            <p className="text-sm">16:9 aspect ratio</p>
-          </div>
-        </div>
-        
-        {/* Content */}
-        <div className={`${backgroundColor} text-white p-8`}>
-          <h2 className="text-4xl font-bold mb-4 text-balance">{title}</h2>
-          <p className="text-lg leading-relaxed mb-6">{description}</p>
-          <p className="text-xl font-semibold">{subtitle}</p>
-        </div>
-      </CardContent>
+    <Card className={`relative mx-auto w-full pt-0 overflow-hidden ${backgroundColor}`}>
+      <div className="absolute inset-0 z-30 aspect-video opacity-50 mix-blend-color"/>
+      <img
+        src={imageUrl}
+        alt={title}
+        title={title}
+        className="relative z-20 aspect-video w-full object-cover brightness-60 grayscale"
+      />
+      <div>
+        <CardHeader>
+          <CardTitle className="text-white text-2xl line-clamp-2">{title}</CardTitle>
+          <CardDescription className="text-white text-[17px] line-clamp-4">{description}</CardDescription>
+        </CardHeader>
+        {subtitle && (
+          <CardFooter>
+            <p className="text-white text-sm font-semibold">{subtitle}</p>
+          </CardFooter>
+        )}
+      </div>
     </Card>
   )
 }
