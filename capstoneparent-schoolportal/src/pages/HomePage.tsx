@@ -67,7 +67,7 @@ export const HomePage = () => {
       </div>
 
       {/* Vision & Mission Section */}
-      <div className="relative w-full py-16 mt-12 min-h-[50vh]">
+      <div className="relative w-full py-16 mt-11.5">
         <div 
           className="absolute inset-0 bg-cover bg-center bg-black opacity-50" // NEED TO REPLACE WITH ACTUAL IMAGE URL
         />

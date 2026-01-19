@@ -36,7 +36,11 @@ export const Navbar = () => {
           <nav className="flex flex-col md:flex-row items-center gap-4 md:gap-20 text-center md:text-left">
             <div className="relative" ref={dropdownRef}>
               <a
-                className="text-lg font-medium text-gray-900 hover:text-gray-700 transition-colors cursor-pointer"
+                className={`text-gray-900 hover:text-gray-700 transition-colors cursor-pointer ${
+                  location.pathname.startsWith("/") && !location.pathname.startsWith("/announcements") && !location.pathname.startsWith("/partnership") && !location.pathname.startsWith("/learn")
+                    ? "text-xl font-bold"
+                    : "text-lg font-medium"
+                }`}
                 onClick={() => setOpenDropdown(openDropdown === "about" ? null : "about")}
               >
                 About Us
@@ -45,21 +49,33 @@ export const Navbar = () => {
             </div>
             <div className="relative">
               <a  
-                className="text-lg font-medium text-gray-900 hover:text-gray-700 transition-colors cursor-pointer"
+                className={`text-gray-900 hover:text-gray-700 transition-colors cursor-pointer ${
+                  location.pathname === "/announcements"
+                    ? "text-xl font-bold"
+                    : "text-lg font-medium"
+                }`}
                 href="/announcements"
               >
                 Announcements
               </a>
             </div>
             <a
-              href="/partnership"
-              className="text-lg font-medium text-gray-900 hover:text-gray-700 transition-colors"
+              href="/partnership&events"
+              className={`text-gray-900 hover:text-gray-700 transition-colors ${
+                location.pathname === "/partnership&events"
+                  ? "text-xl font-bold"
+                  : "text-lg font-medium"
+              }`}
             >
               Partnership & Events
             </a>
             <a
               href="/learn"
-              className="text-lg font-medium text-gray-900 hover:text-gray-700 transition-colors"
+              className={`text-gray-900 hover:text-gray-700 transition-colors ${
+                location.pathname === "/learn"
+                  ? "text-xl font-bold"
+                  : "text-lg font-medium"
+              }`}
             >
               Learn about your child
             </a>
