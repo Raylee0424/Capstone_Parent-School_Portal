@@ -70,7 +70,7 @@ export const Navbar = () => {
               Partnership & Events
             </a>
             <a
-              href="/learn"
+              href="/login"
               className={`text-gray-900 hover:text-gray-700 transition-colors ${
                 location.pathname === "/learn"
                   ? "text-xl font-bold"
