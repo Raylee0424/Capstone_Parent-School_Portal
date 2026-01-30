@@ -2,11 +2,12 @@ import { Navbar } from "@/components/Navbar";
 
 export const Transparency = () => {
   return (
-    <div className="text-center">
+    <div>
       <Navbar />
-      <div className="max-w-4xl mx-auto py-6 px-4">
-        <h1 className="text-3xl font-bold mb-4">Transparency Page</h1>
-        <p>This is the transparency page content.</p>
+      <div className="max-w-7xl mx-auto py-12 px-4">
+        <h1 className="text-4xl font-bold mb-8">Transparency & Monthly Budget Proposal</h1>
+        {/* Placeholder for Transparency & Monthly Budget Proposal content */}
+        <div className="w-full h-200 bg-gray-300"></div>
       </div>
     </div>
   );
