@@ -16,6 +16,7 @@ const pageTitles: Record<string, string> = {
   '/transparency': 'Transparency | Parent-School Portal',
   '/visionandmission': 'Vision And Mission | Parent-School Portal',
   
+  
 }
 
 export const usePageTitle = () => {

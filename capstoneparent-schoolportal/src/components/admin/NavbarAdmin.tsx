@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
+import { User } from "lucide-react";
 import { AboutUsDropdown } from "../AboutUsDropdown";
 import { RecordsDropdown } from "./RecordsDropdown";
 import { useLocation, Link } from "react-router-dom";
 
-export const Navbar = () => {
+export const NavbarAdmin = () => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const location = useLocation();
   const isRegisterPage = location.pathname === "/register";
@@ -94,8 +95,12 @@ export const Navbar = () => {
             </div>
           </nav>
         </div>
-
-        <div>{/* Admin Profile*/}</div>
+        
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-400 transition-colors">
+            <User className="h-6 w-6 text-gray-700" />
+          </div>
+        </div>
       </div>
     </header>
   );
