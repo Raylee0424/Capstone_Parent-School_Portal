@@ -18,5 +18,7 @@
   --status-graduated: #3b82f6;
   --status-dropped: #dc2626;
   --status-suspended: #a855f7;
+  --status-active: #10b981;
+  --status-inactive: #dc2626;
 }
 
