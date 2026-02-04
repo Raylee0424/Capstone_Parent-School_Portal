@@ -25,8 +25,12 @@ import { ManageSection } from "./Pages/admin-pages/ManageSection";
 import { ManageStaffAccounts } from "./Pages/admin-pages/ManageStaffAccounts";
 import { ManageStudents } from "./Pages/admin-pages/ManageStudents";
 
+{/*Teacher Sub Pages */}
+import { TeacherView } from "./Pages/teacher-pages/TeacherView";
+
 import { usePageTitle } from "./hooks/usePageTitle";
 import "./styles/index.css";
+
 
 const App = () => {
   usePageTitle();
@@ -55,6 +59,9 @@ const App = () => {
       <Route path="/managestudents" element={<ManageStudents />} />
       <Route path="/managesections" element={<ManageSection />} />
       <Route path="/managestaffaccounts" element={<ManageStaffAccounts />} />
+
+      {/*Teacher Sub Pages (Some routes are in admin)*/}
+      <Route path="/teacherview" element={<TeacherView/>}/>
     </Routes>
   );
 };

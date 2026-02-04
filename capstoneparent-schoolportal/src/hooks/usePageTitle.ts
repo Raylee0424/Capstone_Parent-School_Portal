@@ -23,7 +23,7 @@ export const usePageTitle = () => {
   const location = useLocation()
 
   useEffect(() => {
-    const title = pageTitles[location.pathname] || 'Parent-School Portal'
+    const title = pageTitles[location.pathname] || 'Parent-School Portal | Pagsabungan Elementary School'
     document.title = title
   }, [location.pathname])
 }
