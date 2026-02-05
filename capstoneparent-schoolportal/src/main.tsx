@@ -27,6 +27,7 @@ import { ManageStudents } from "./Pages/admin-pages/ManageStudents";
 
 {/*Teacher Sub Pages */}
 import { TeacherView } from "./Pages/teacher-pages/TeacherView";
+import { ClassList } from "./Pages/teacher-pages/ClassList";
 
 import { usePageTitle } from "./hooks/usePageTitle";
 import "./styles/index.css";
@@ -62,6 +63,7 @@ const App = () => {
 
       {/*Teacher Sub Pages (Some routes are in admin)*/}
       <Route path="/teacherview" element={<TeacherView/>}/>
+      <Route path="/classlist" element={<ClassList/>}/>
     </Routes>
   );
 };

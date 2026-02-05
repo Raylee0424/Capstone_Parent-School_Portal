@@ -24,7 +24,7 @@ export const NavbarTeacher = () => {
   }, []);
 
   return (
-    <header className="bg-(--navbar-bg) px-6 py-4">
+    <header className="bg-(--navbar-bg) px-6 py-4 sticky top-0 z-50">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-8">
           <Link

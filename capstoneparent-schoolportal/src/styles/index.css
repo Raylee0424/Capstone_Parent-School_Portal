@@ -3,8 +3,8 @@
 
 :root {
   --navbar-bg: #d4d433;
-  --button-green: #4a9d5f;
-  --button-hover-green: #3d8550;
+  --button-green: #4DA660;
+  --button-hover-green: #4DA660;
   --button-white: #ffffff;
   --button-gray: #e0e0e0;
   --signin-bg: #f4f4c0;
@@ -12,13 +12,16 @@
   --text-gray-hover: #gray-700;
   --status-pending: #f59e0b;
   --status-denied: #dc2626;
-  --status-verified: #10b981;
-  --status-enrolled: #10b981;
+  --status-verified: #4DA660;
+  --status-enrolled: #4DA660;
   --status-transferred: #eab308;
   --status-graduated: #3b82f6;
   --status-dropped: #dc2626;
   --status-suspended: #a855f7;
-  --status-active: #10b981;
+  --status-active: #4DA660;
   --status-inactive: #dc2626;
+
+  --div-bg: #D9D9D9;
+  --tab-subtext: #F4FF1F;
 }
 
