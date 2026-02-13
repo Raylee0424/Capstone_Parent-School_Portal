@@ -31,6 +31,7 @@ A comprehensive backend API for managing school operations including users, stud
 - npm or yarn
 
 ### 2. Installation
+
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -43,38 +44,24 @@ npm install
 ### 3. Environment Configuration
 
 ### 4. Database Setup
+
 ```bash
 # Generate Prisma Client
-npm run prisma:generate
+npx prisma generate
 
 # Run migrations
-npm run prisma:migrate
+npx prisma migrate dev --name [migration_name]
 
 # (Optional) Open Prisma Studio to view/edit data
-npm run prisma:studio
+npx prisma studio
 ```
 
-### 5. Seed Grade Levels (Optional)
+### 5. Start server
 
-You may want to manually add grade levels to your database:
-```sql
-INSERT INTO grade_levels (grade_level) VALUES
-('Kindergarten'),
-('Grade 1'),
-('Grade 2'),
-('Grade 3'),
-('Grade 4'),
-('Grade 5'),
-('Grade 6');
-```
-
-### 6. Run the Application
 ```bash
-# Development mode with auto-reload
-npm run dev
+# Run server
+node server.js
 
-# Production mode
-npm start
 ```
 
 The server will start on `http://localhost:5000`
@@ -82,6 +69,7 @@ The server will start on `http://localhost:5000`
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login
 - `POST /api/auth/send-otp` - Send OTP
@@ -90,6 +78,7 @@ The server will start on `http://localhost:5000`
 - `GET /api/auth/me` - Get current user
 
 ### Users
+
 - `GET /api/users` - Get all users (Admin only)
 - `GET /api/users/:id` - Get user by ID
 - `PUT /api/users/:id` - Update user
@@ -98,6 +87,7 @@ The server will start on `http://localhost:5000`
 - `DELETE /api/users/:id/roles/:roleId` - Remove role
 
 ### Students
+
 - `GET /api/students` - Get all students
 - `GET /api/students/:id` - Get student by ID
 - `POST /api/students` - Create student
@@ -107,6 +97,7 @@ The server will start on `http://localhost:5000`
 - `GET /api/students/:id/attendance` - Get student attendance
 
 ### Parents
+
 - `POST /api/parents/register` - Submit parent registration
 - `GET /api/parents/registrations` - Get all registrations
 - `GET /api/parents/registrations/:id` - Get registration by ID
@@ -116,6 +107,7 @@ The server will start on `http://localhost:5000`
 - `GET /api/parents/children/:studentId/attendance` - Get child attendance
 
 ### Classes
+
 - `GET /api/classes` - Get all classes
 - `GET /api/classes/:id` - Get class by ID
 - `POST /api/classes` - Create class
@@ -127,6 +119,7 @@ The server will start on `http://localhost:5000`
 - `POST /api/classes/students/:studentId/attendance` - Update attendance
 
 ### Library
+
 - `GET /api/library/materials` - Get all materials
 - `GET /api/library/materials/:id` - Get material by ID
 - `POST /api/library/materials` - Create material
@@ -141,6 +134,7 @@ The server will start on `http://localhost:5000`
 - `POST /api/library/categories` - Create category
 
 ### Announcements
+
 - `GET /api/announcements` - Get all announcements
 - `GET /api/announcements/:id` - Get announcement by ID
 - `POST /api/announcements` - Create announcement
@@ -148,6 +142,7 @@ The server will start on `http://localhost:5000`
 - `DELETE /api/announcements/:id` - Delete announcement
 
 ### Events
+
 - `GET /api/events` - Get all events
 - `GET /api/events/:id` - Get event by ID
 - `POST /api/events` - Create event
@@ -155,6 +150,7 @@ The server will start on `http://localhost:5000`
 - `DELETE /api/events/:id` - Delete event
 
 ## Project Structure
+
 ```
 src/
 ├── config/
