@@ -29,9 +29,14 @@ import { ManageStudents } from "./Pages/admin-pages/ManageStudents";
 import { TeacherView } from "./Pages/teacher-pages/TeacherView";
 import { ClassList } from "./Pages/teacher-pages/ClassList";
 
+{/*Staff Sub Pages */}
+import { StaffView } from "./Pages/staff-pages/StaffView";
+import { GeneralAnnouncement } from "./Pages/staff-pages/announcement-pages/GeneralAnnouncement";
+import { StaffAnnouncement } from "./Pages/staff-pages/announcement-pages/StaffAnnouncement";
+import { MemorandumAnnouncement } from "./Pages/staff-pages/announcement-pages/MemorandumAnnouncemnt";
+
 import { usePageTitle } from "./hooks/usePageTitle";
 import "./styles/index.css";
-
 
 const App = () => {
   usePageTitle();
@@ -64,6 +69,12 @@ const App = () => {
       {/*Teacher Sub Pages (Some routes are in admin)*/}
       <Route path="/teacherview" element={<TeacherView/>}/>
       <Route path="/classlist" element={<ClassList/>}/>
+
+      {/*Staff Sub Pages */}
+      <Route path="/staffview" element={<StaffView/>}/>
+      <Route path="/generalannouncement" element={<GeneralAnnouncement/>}/>
+      <Route path="/staffannouncement" element={<StaffAnnouncement/>}/>
+      <Route path="/memorandumannouncement" element={<MemorandumAnnouncement/>}/>
     </Routes>
   );
 };

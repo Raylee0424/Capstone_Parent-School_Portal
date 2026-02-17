@@ -32,7 +32,7 @@ export const NavbarAdmin = () => {
             className="relative h-16 w-16 cursor-pointer hover:opacity-80 transition-opacity"
           >
             <img
-              src="/logo.png"
+              src="/Logo.png"
               alt="Bayog Elementary National School Logo"
               className="object-contain"
             />
