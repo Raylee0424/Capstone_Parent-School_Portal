@@ -1,8 +1,8 @@
-const express = require('express');
-const { body, param, query } = require('express-validator');
-const parentsController = require('../controllers/parents.controller');
-const validate = require('../middlewares/validation');
-const { authenticate, authorize } = require('../middlewares/auth');
+const express = require("express");
+const { body, param, query } = require("express-validator");
+const parentsController = require("../controllers/parents.controller");
+const validate = require("../middlewares/validation");
+const { authenticate, authorize } = require("../middlewares/auth");
 
 const router = express.Router();
 
@@ -10,64 +10,71 @@ const router = express.Router();
 router.use(authenticate);
 
 // Submit parent registration
-router.post('/register',
+router.post(
+  "/register",
   [
-    body('student_ids').isArray({ min: 1 }),
-    body('student_ids.*').isInt(),
-    body('file_ids').optional().isArray()
+    body("student_ids").isArray({ min: 1 }),
+    body("student_ids.*").isInt(),
+    body("file_ids")
+      .isArray({ min: 1 })
+      .withMessage("At least one file is required"),
+    body("file_ids.*").isInt(),
   ],
   validate,
-  parentsController.submitRegistration
+  parentsController.submitRegistration,
 );
 
 // Get all parent registrations (Admin, Teacher only)
-router.get('/registrations',
-  authorize('Admin', 'Teacher', 'Principal', 'Vice_Principal'),
+router.get(
+  "/registrations",
+  authorize("Admin", "Teacher", "Principal", "Vice_Principal"),
   [
-    query('status').optional().isIn(['VERIFIED', 'PENDING', 'DENIED']),
-    query('page').optional().isInt({ min: 1 }),
-    query('limit').optional().isInt({ min: 1, max: 100 })
+    query("status").optional().isIn(["VERIFIED", "PENDING", "DENIED"]),
+    query("page").optional().isInt({ min: 1 }),
+    query("limit").optional().isInt({ min: 1, max: 100 }),
   ],
   validate,
-  parentsController.getAllRegistrations
+  parentsController.getAllRegistrations,
 );
 
 // Get parent registration by ID
-router.get('/registrations/:id',
-  param('id').isInt(),
+router.get(
+  "/registrations/:id",
+  param("id").isInt(),
   validate,
-  parentsController.getRegistrationById
+  parentsController.getRegistrationById,
 );
 
 // Verify parent registration (Admin, Teacher only)
-router.patch('/registrations/:id/verify',
-  authorize('Admin', 'Teacher', 'Principal', 'Vice_Principal'),
+router.patch(
+  "/registrations/:id/verify",
+  authorize("Admin", "Teacher", "Principal", "Vice_Principal"),
   [
-    param('id').isInt(),
-    body('status').isIn(['VERIFIED', 'DENIED']),
-    body('remarks').optional()
+    param("id").isInt(),
+    body("status").isIn(["VERIFIED", "DENIED"]),
+    body("remarks").optional(),
   ],
   validate,
-  parentsController.verifyRegistration
+  parentsController.verifyRegistration,
 );
 
 // Get my children (for parents)
-router.get('/my-children',
-  parentsController.getMyChildren
-);
+router.get("/my-children", parentsController.getMyChildren);
 
 // Get child grades
-router.get('/children/:studentId/grades',
-  param('studentId').isInt(),
+router.get(
+  "/children/:studentId/grades",
+  param("studentId").isInt(),
   validate,
-  parentsController.getChildGrades
+  parentsController.getChildGrades,
 );
 
 // Get child attendance
-router.get('/children/:studentId/attendance',
-  param('studentId').isInt(),
+router.get(
+  "/children/:studentId/attendance",
+  param("studentId").isInt(),
   validate,
-  parentsController.getChildAttendance
+  parentsController.getChildAttendance,
 );
 
 module.exports = router;

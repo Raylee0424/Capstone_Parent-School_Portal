@@ -973,7 +973,7 @@ Get all material categories (public)
 
 #### POST /api/parents/register
 
-Submit parent registration
+Submit parent registration with required supporting documents
 
 **Headers:**
 
@@ -985,9 +985,15 @@ Authorization: Bearer {parent_token}
 
 ```json
 {
-  "student_ids": [1, 2]
+  "student_ids": [1, 2],
+  "file_ids": [1, 2, 3]
 }
 ```
+
+**Required Fields:**
+
+- `student_ids` - Array of at least one student ID (required)
+- `file_ids` - Array of at least one file ID for supporting documents (required)
 
 **Response (201):**
 
@@ -1003,9 +1009,24 @@ Authorization: Bearer {parent_token}
       "fname": "Juan",
       "lname": "Dela Cruz"
     }
+  ],
+  "files": [
+    {
+      "file_id": 1,
+      "file_name": "birth_certificate.pdf",
+      "file_type": "application/pdf",
+      "file_size": 45000
+    }
   ]
 }
 ```
+
+**Status Codes:**
+
+- `201` - Registration submitted successfully
+- `400` - Missing required fields or invalid data
+- `401` - Unauthorized (invalid token)
+- `404` - Student or file not found
 
 ---
 
