@@ -18,6 +18,12 @@ import { SchoolCalendar } from "./Pages/sub-pages/SchoolCalendar";
 import { Transparency } from "./Pages/sub-pages/Transparency";
 import { VisionAndMission } from "./Pages/sub-pages/VisionAndMission";
 
+{/*Parent Pages */}
+import { ParentView } from "./Pages/parent-pages/ParentView";
+import { ClassSchedule } from "./Pages/parent-pages/ClassSchedule";
+import { QuarterlyGrades } from "./Pages/parent-pages/QuarterlyGrades";
+import { LibraryRecords } from "./Pages/parent-pages/LibraryRecords";
+
 {/*Admin Sub Pages */}
 import { AdminView } from "./Pages/admin-pages/AdminView";
 import { ManageParentVerification } from "./Pages/admin-pages/ManageParentVerification";
@@ -58,6 +64,12 @@ const App = () => {
       <Route path="/schoolcalendar" element={<SchoolCalendar />} />
       <Route path="/transparency" element={<Transparency />} />
       <Route path="/visionandmission" element={<VisionAndMission />} />
+
+      {/*Parent Pages */}
+      <Route path="/parentview" element={<ParentView />} />
+      <Route path="/classschedule" element={<ClassSchedule />} />
+      <Route path="/quarterlygrades" element={<QuarterlyGrades />} />
+      <Route path="/libraryrecords" element={<LibraryRecords />} />
 
       {/*Admin Sub Pages */}
       <Route path="/adminview" element={<AdminView />} />
