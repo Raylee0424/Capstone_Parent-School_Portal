@@ -1,5 +1,18 @@
 import { AboutChildNavbar } from "@/components/parent/AboutChildNavbar";
 import { NavbarParent } from "@/components/parent/NavbarParent";
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
+
+interface Child {
+	id: string;
+	name: string;
+	status: "VERIFIED" | "PENDING" | "DENIED";
+	lrn?: string;
+	gradeLevel?: string;
+	section?: string;
+	schoolYear?: string;
+	sex?: string;
+}
 
 interface ScheduleRow {
 	time: string;
@@ -61,76 +74,163 @@ const scheduleRows: ScheduleRow[] = [
 	},
 ];
 
+const childrenData: Child[] = [
+	{
+		id: "1",
+		name: "Angela Reyes",
+		status: "VERIFIED",
+		lrn: "501142400721",
+		gradeLevel: "Grade 1",
+		section: "Section A",
+		schoolYear: "2024 - 2025",
+		sex: "Female",
+	},
+	{
+		id: "2",
+		name: "Miguel Fernandez",
+		status: "VERIFIED",
+		lrn: "501142400722",
+		gradeLevel: "Grade 2",
+		section: "Section B",
+		schoolYear: "2024 - 2025",
+		sex: "Male",
+	},
+	{
+		id: "3",
+		name: "Jasmine Tolentino",
+		status: "VERIFIED",
+		lrn: "501142400723",
+		gradeLevel: "Grade 3",
+		section: "Section C",
+		schoolYear: "2024 - 2025",
+		sex: "Female",
+	},
+];
+
 export const ClassSchedule = () => {
+	const [selectedChild, setSelectedChild] = useState<Child>(childrenData[0]);
+	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+	const otherChildren = childrenData.filter(
+		(child) => child.id !== selectedChild.id && child.status === "VERIFIED"
+	);
+
+	const handleSelectChild = (child: Child) => {
+		setSelectedChild(child);
+		setIsDropdownOpen(false);
+	};
+
 	return (
 		<div className="min-h-screen bg-white">
 			<NavbarParent />
 			<AboutChildNavbar activeTab="class-schedule" />
 
-			<main className="mx-auto max-w-6xl px-6 pb-12 pt-8">
-				<section className="grid grid-cols-1 gap-1 md:grid-cols-[2.15fr_1fr]">
-					<div className="border border-gray-500 bg-[#efefef] px-4 py-3 text-[1.85rem] md:text-[1.95rem]">
-						<div className="grid grid-cols-1 gap-y-2 md:grid-cols-2 md:gap-x-8">
-							<p>
-								<span className="font-bold">Student Name:</span> Angela Reyes
+			<main className="mx-auto max-w-7xl px-6 pb-12 pt-6">
+				{/* Student Information */}
+				<section className="mb-6 rounded-xl border-2 border-gray-300 bg-white p-6 shadow-sm">
+					<h2 className="mb-4 text-2xl font-bold">Student Information</h2>
+					<div className="grid grid-cols-1 gap-4 md:grid-cols-[2fr_1fr]">
+						<div className="space-y-2">
+							<p className="text-lg">
+								<span className="font-semibold">Student Name:</span> {selectedChild.name}
 							</p>
-							<p>
-								<span className="font-bold">Grade Level & Section:</span> Grade 1 - Section A
+							<p className="text-lg">
+								<span className="font-semibold">Sex:</span> {selectedChild.sex}
 							</p>
-							<p>
-								<span className="font-bold">Sex:</span> Female
+							<p className="text-lg">
+								<span className="font-semibold">LRN:</span> {selectedChild.lrn}
 							</p>
-							<p>
-								<span className="font-bold">School Year:</span> 2024 - 2025
+						</div>
+						<div className="space-y-2">
+							<p className="text-lg">
+								<span className="font-semibold">Grade Level & Section:</span>{" "}
+								{selectedChild.gradeLevel} - {selectedChild.section}
 							</p>
-							<p>
-								<span className="font-bold">Student LRN:</span> 501142400721
+							<p className="text-lg">
+								<span className="font-semibold">School Year:</span> {selectedChild.schoolYear}
 							</p>
 						</div>
 					</div>
-
-					<aside className="border border-gray-500" style={{ backgroundColor: "var(--button-green)" }}>
-						<h2 className="border-b border-gray-200 px-4 py-2 text-center text-[1.85rem] font-bold text-white md:text-[1.95rem]">
-							Switch to another child
-						</h2>
-						<div className="space-y-1 px-4 py-2 text-center text-[1.75rem] md:text-[1.85rem]">
-							<button type="button" className="text-white underline transition-opacity hover:opacity-80">
-								Miguel Fernandez
+					<div className="mt-4 flex justify-end">
+						<div className="relative">
+							<button
+								type="button"
+								onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+								className="flex items-center gap-2 rounded-lg border border-gray-400 bg-white px-4 py-2 text-lg font-medium transition-colors hover:bg-gray-50"
+							>
+								Switch to another child
+								<ChevronDown
+									className={`h-5 w-5 transition-transform ${
+										isDropdownOpen ? "rotate-180" : ""
+									}`}
+								/>
 							</button>
-							<button type="button" className="block w-full text-white underline transition-opacity hover:opacity-80">
-								Jasmine Tolentino
-							</button>
+							{isDropdownOpen && otherChildren.length > 0 && (
+								<div className="absolute right-0 z-10 mt-2 w-64 rounded-lg border border-gray-300 bg-white shadow-lg">
+									{otherChildren.map((child) => (
+										<button
+											key={child.id}
+											type="button"
+											onClick={() => handleSelectChild(child)}
+											className="block w-full px-4 py-3 text-left text-lg transition-colors first:rounded-t-lg last:rounded-b-lg hover:bg-gray-100"
+										>
+											{child.name}
+										</button>
+									))}
+								</div>
+							)}
 						</div>
-					</aside>
+					</div>
 				</section>
 
-				<section className="mt-6 border border-gray-500 bg-[#efefef] p-3">
+				{/* Class Schedule */}
+				<section className="rounded-xl border-2 border-gray-300 bg-white p-6 shadow-sm">
+					<h2 className="mb-4 text-2xl font-bold">Weekly Class Schedule</h2>
 					<div className="overflow-x-auto">
-						<table className="w-full min-w-245 border-collapse border border-gray-600 text-center">
+						<table className="w-full border-collapse text-center text-sm">
 							<thead>
-								<tr>
-									  <th className="w-32.5 border border-gray-600 bg-white px-2 py-2 text-[2.15rem] font-semibold"></th>
-									<th className="border border-gray-600 bg-white px-2 py-2 text-[2.15rem] font-semibold">Monday</th>
-									<th className="border border-gray-600 bg-white px-2 py-2 text-[2.15rem] font-semibold">Tuesday</th>
-									<th className="border border-gray-600 bg-white px-2 py-2 text-[2.15rem] font-semibold">Wednesday</th>
-									<th className="border border-gray-600 bg-white px-2 py-2 text-[2.15rem] font-semibold">Thursday</th>
-									<th className="border border-gray-600 bg-white px-2 py-2 text-[2.15rem] font-semibold">Friday</th>
+								<tr className="bg-gray-100">
+									<th className="w-28 border border-gray-400 px-3 py-3 text-base font-semibold">
+										Time
+									</th>
+									<th className="border border-gray-400 px-3 py-3 text-base font-semibold">
+										Monday
+									</th>
+									<th className="border border-gray-400 px-3 py-3 text-base font-semibold">
+										Tuesday
+									</th>
+									<th className="border border-gray-400 px-3 py-3 text-base font-semibold">
+										Wednesday
+									</th>
+									<th className="border border-gray-400 px-3 py-3 text-base font-semibold">
+										Thursday
+									</th>
+									<th className="border border-gray-400 px-3 py-3 text-base font-semibold">
+										Friday
+									</th>
 								</tr>
 							</thead>
 							<tbody>
 								{scheduleRows.map((row) => (
-									<tr key={row.time}>
-										<td className="border border-gray-600 px-2 py-3 align-top text-[2rem] font-medium">{row.time}</td>
-										{[row.monday, row.tuesday, row.wednesday, row.thursday, row.friday].map((dayCell, index) => (
-											<td key={`${row.time}-${index}`} className="border border-gray-600 px-2 py-3 text-[2.1rem] leading-tight">
-												<p>{dayCell.main}</p>
-												{dayCell.sub && (
-													<p className="mt-1 text-[1.55rem] font-semibold" style={{ color: "#8b5fbf" }}>
-														{dayCell.sub}
-													</p>
-												)}
-											</td>
-										))}
+									<tr key={row.time} className="hover:bg-gray-50">
+										<td className="border border-gray-400 px-3 py-3 align-top font-medium">
+											{row.time}
+										</td>
+										{[row.monday, row.tuesday, row.wednesday, row.thursday, row.friday].map(
+											(dayCell, index) => (
+												<td
+													key={`${row.time}-${index}`}
+													className="border border-gray-400 px-3 py-3 align-top"
+												>
+													<p className="font-medium">{dayCell.main}</p>
+													{dayCell.sub && (
+														<p className="mt-1 text-xs italic text-purple-600">
+															{dayCell.sub}
+														</p>
+													)}
+												</td>
+											)
+										)}
 									</tr>
 								))}
 							</tbody>
