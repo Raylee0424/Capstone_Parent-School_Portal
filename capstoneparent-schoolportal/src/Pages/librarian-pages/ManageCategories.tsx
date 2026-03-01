@@ -63,6 +63,16 @@ export const ManageCategories = () => {
     closeEditCategoryModal();
   };
 
+  const handleDeleteCategory = (categoryToDelete: string) => {
+    setCategories((prevCategories) =>
+      prevCategories.filter((category) => category !== categoryToDelete)
+    );
+
+    if (editingCategory === categoryToDelete) {
+      closeEditCategoryModal();
+    }
+  };
+
   const filtered = categories.filter((c) =>
     c.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -103,6 +113,13 @@ export const ManageCategories = () => {
                       className="rounded-md bg-(--button-green) px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-(--button-hover-green)"
                     >
                       Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCategory(c)}
+                      className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+                    >
+                      Delete
                     </button>
                   </div>
                 ))}
