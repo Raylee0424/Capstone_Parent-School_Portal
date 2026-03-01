@@ -8,6 +8,12 @@ export const NavbarLibrarian = () => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const location = useLocation();
   const navRef = useRef<HTMLElement>(null);
+  const isRecordsRoute = [
+    "/managebooks",
+    "/managelearningresources",
+    "/borrowedresources",
+    "/managecategories",
+  ].includes(location.pathname);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -80,7 +86,7 @@ export const NavbarLibrarian = () => {
             <div className="relative">
               <a
                 className={`text-gray-900 hover:text-gray-700 transition-colors cursor-pointer ${
-                  openDropdown === "records"
+                  openDropdown === "records" || isRecordsRoute
                     ? "text-xl font-bold"
                     : "text-lg font-medium"
                 }`}

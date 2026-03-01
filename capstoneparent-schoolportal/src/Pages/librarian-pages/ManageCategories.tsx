@@ -1,16 +1,67 @@
 import { NavbarLibrarian } from "@/components/librarian/NavbarLibrarian";
+import AddCategoryModal from "@/components/librarian/AddCategoryModal";
+import EditCategoryModal from "@/components/librarian/EditCategoryModal";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
 export const ManageCategories = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [showEditCategoryModal, setShowEditCategoryModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
 
-  const categories = [
+  const [categories, setCategories] = useState([
     "Mathematics",
     "Science",
     "Games",
     "History",
-  ];
+  ]);
+
+  const handleAddCategory = (newCategory: string) => {
+    const categoryExists = categories.some(
+      (category) => category.toLowerCase() === newCategory.toLowerCase()
+    );
+
+    if (categoryExists) {
+      return;
+    }
+
+    setCategories((prevCategories) => [...prevCategories, newCategory]);
+  };
+
+  const openEditCategoryModal = (categoryName: string) => {
+    setEditingCategory(categoryName);
+    setShowEditCategoryModal(true);
+  };
+
+  const closeEditCategoryModal = () => {
+    setShowEditCategoryModal(false);
+    setEditingCategory(null);
+  };
+
+  const handleEditCategory = (updatedCategory: string) => {
+    if (!editingCategory) {
+      return;
+    }
+
+    const categoryExists = categories.some(
+      (category) =>
+        category.toLowerCase() === updatedCategory.toLowerCase() &&
+        category.toLowerCase() !== editingCategory.toLowerCase()
+    );
+
+    if (categoryExists) {
+      return;
+    }
+
+    setCategories((prevCategories) =>
+      prevCategories.map((category) =>
+        category === editingCategory ? updatedCategory : category
+      )
+    );
+
+    closeEditCategoryModal();
+  };
 
   const filtered = categories.filter((c) =>
     c.toLowerCase().includes(searchQuery.toLowerCase())
@@ -26,6 +77,7 @@ export const ManageCategories = () => {
             <button
               className="rounded-md bg-(--button-green) px-4 py-2 text-white font-semibold hover:bg-(--button-hover-green) transition-colors"
               type="button"
+              onClick={() => setShowAddCategoryModal(true)}
             >
               Add Category
             </button>
@@ -42,9 +94,16 @@ export const ManageCategories = () => {
                 {filtered.map((c) => (
                   <div
                     key={c}
-                    className="px-4 py-3 border-b border-gray-200 last:border-b-0"
+                    className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200 last:border-b-0"
                   >
-                    {c}
+                    <span>{c}</span>
+                    <button
+                      type="button"
+                      onClick={() => openEditCategoryModal(c)}
+                      className="rounded-md bg-(--button-green) px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-(--button-hover-green)"
+                    >
+                      Edit
+                    </button>
                   </div>
                 ))}
                 {filtered.length === 0 && (
@@ -56,6 +115,21 @@ export const ManageCategories = () => {
           </div>
         </div>
       </main>
+
+      {showAddCategoryModal && (
+        <AddCategoryModal
+          onClose={() => setShowAddCategoryModal(false)}
+          onAdd={handleAddCategory}
+        />
+      )}
+
+      {showEditCategoryModal && editingCategory && (
+        <EditCategoryModal
+          onClose={closeEditCategoryModal}
+          onEdit={handleEditCategory}
+          initialCategoryName={editingCategory}
+        />
+      )}
     </div>
   );
 };

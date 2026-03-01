@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { X, Plus, Filter, ChevronDown, BookOpen } from 'lucide-react';
 
-const BookCopiesModal = ({ onClose }) => {
+interface BookCopyModalProps {
+  onClose: () => void;
+}
+
+const BookCopyModal: React.FC<BookCopyModalProps> = ({ onClose }) => {
+  const [filterStatus, setFilterStatus] = React.useState<string>('Status');
+  const [copyStatuses, setCopyStatuses] = React.useState<Record<number, string>>({});
   // Mock data based on the UI provided
   const copies = [
     {
@@ -68,10 +74,14 @@ const BookCopiesModal = ({ onClose }) => {
           </button>
           
           <div className="relative">
-            <select className="appearance-none rounded-md bg-[#5c5c5c] pl-6 pr-12 py-2.5 text-white shadow-sm outline-none cursor-pointer">
+            <select 
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="appearance-none rounded-md bg-[#5c5c5c] pl-6 pr-12 py-2.5 text-white shadow-sm outline-none cursor-pointer"
+            >
               <option>Status</option>
-              <option>Available</option>
-              <option>Borrowed</option>
+              <option value="AVAILABLE">Available</option>
+              <option value="BORROWED">Borrowed</option>
             </select>
             <Filter size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-white pointer-events-none" />
           </div>
@@ -107,7 +117,9 @@ const BookCopiesModal = ({ onClose }) => {
                 <div className="relative w-48">
                   <select 
                     defaultValue={copy.status}
-                    className={`w-full appearance-none rounded-full px-4 py-1.5 text-center font-bold text-gray-900 shadow-sm outline-none cursor-pointer
+                     value={copyStatuses[copy.id] || copy.status}
+                      onChange={(e) => setCopyStatuses({ ...copyStatuses, [copy.id]: e.target.value })}
+                      className={`w-full appearance-none rounded-full px-4 py-1.5 text-center font-bold text-gray-900 shadow-sm outline-none cursor-pointer
                       ${copy.status === 'AVAILABLE' ? 'bg-[#5cd65c]' : 'bg-[#e6b800]'}`}
                   >
                     <option value="AVAILABLE">AVAILABLE</option>
@@ -130,4 +142,4 @@ const BookCopiesModal = ({ onClose }) => {
   );
 };
 
-export default BookCopiesModal;
+export default BookCopyModal;
