@@ -3,7 +3,8 @@ import { Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { NavbarAdmin } from "../../components/admin/NavbarAdmin";
 import { Button } from "../../components/ui/button";
 import { StatusDropdown } from "../../components/general/StatusDropdown";
-import { Modal } from "../../components/ui/modal";
+import { StudentFormModal } from "../../components/admin/StudentFormModal";
+import { StudentDeleteModal } from "../../components/admin/StudentDeleteModal";
 
 interface Student {
   id: number;
@@ -395,8 +396,7 @@ export const ManageStudents = () => {
         </div>
       </div>
 
-      {/* Add Student Modal */}
-      <Modal
+      <StudentFormModal
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false);
@@ -411,91 +411,14 @@ export const ManageStudents = () => {
             dateEnrolled: "",
           });
         }}
+        onSubmit={handleAddStudent}
         title="Add Student"
-      >
-        <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="First Name"
-            value={formData.firstName}
-            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Last Name"
-            value={formData.lastName}
-            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <select
-            value={formData.sex}
-            onChange={(e) => setFormData({ ...formData, sex: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
-          >
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-          <input
-            type="text"
-            placeholder="LRN Number"
-            value={formData.lrn}
-            onChange={(e) => setFormData({ ...formData, lrn: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <select
-            value={formData.gradeLevel}
-            onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
-          >
-            <option value="Grade 1">Grade 1</option>
-            <option value="Grade 2">Grade 2</option>
-            <option value="Grade 3">Grade 3</option>
-            <option value="Grade 4">Grade 4</option>
-            <option value="Grade 5">Grade 5</option>
-            <option value="Grade 6">Grade 6</option>
-          </select>
-          <select
-            value={formData.section}
-            onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
-          >
-            <option value="Section A">Section A</option>
-            <option value="Section B">Section B</option>
-            <option value="Section C">Section C</option>
-            <option value="Section D">Section D</option>
-          </select>
-          <select
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
-          >
-            <option value="ENROLLED" className="text-green-600">ENROLLED</option>
-            <option value="TRANSFERRED" className="text-yellow-600">TRANSFERRED</option>
-            <option value="GRADUATED" className="text-blue-600">GRADUATED</option>
-            <option value="DROPPED" className="text-red-600">DROPPED</option>
-            <option value="SUSPENDED" className="text-purple-600">SUSPENDED</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Date Enrolled (MM/DD/YY)"
-            value={formData.dateEnrolled}
-            onChange={(e) => setFormData({ ...formData, dateEnrolled: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <div className="flex justify-end">
-            <Button
-              onClick={handleAddStudent}
-              className="bg-(--button-green) hover:bg-(--button-hover-green) text-white px-8 py-3 text-lg rounded-full"
-            >
-              Add
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        submitLabel="Add"
+        formData={formData}
+        setFormData={setFormData}
+      />
 
-      {/* Edit Student Modal */}
-      <Modal
+      <StudentFormModal
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
@@ -511,123 +434,22 @@ export const ManageStudents = () => {
             dateEnrolled: "",
           });
         }}
+        onSubmit={handleUpdateStudent}
         title="Edit Student"
-      >
-        <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="First Name"
-            value={formData.firstName}
-            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Last Name"
-            value={formData.lastName}
-            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <select
-            value={formData.sex}
-            onChange={(e) => setFormData({ ...formData, sex: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
-          >
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-          <input
-            type="text"
-            placeholder="LRN Number"
-            value={formData.lrn}
-            onChange={(e) => setFormData({ ...formData, lrn: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <select
-            value={formData.gradeLevel}
-            onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
-          >
-            <option value="Grade 1">Grade 1</option>
-            <option value="Grade 2">Grade 2</option>
-            <option value="Grade 3">Grade 3</option>
-            <option value="Grade 4">Grade 4</option>
-            <option value="Grade 5">Grade 5</option>
-            <option value="Grade 6">Grade 6</option>
-          </select>
-          <select
-            value={formData.section}
-            onChange={(e) => setFormData({ ...formData, section: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
-          >
-            <option value="Section A">Section A</option>
-            <option value="Section B">Section B</option>
-            <option value="Section C">Section C</option>
-            <option value="Section D">Section D</option>
-          </select>
-          <select
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
-          >
-            <option value="ENROLLED" className="text-green-600">ENROLLED</option>
-            <option value="TRANSFERRED" className="text-yellow-600">TRANSFERRED</option>
-            <option value="GRADUATED" className="text-blue-600">GRADUATED</option>
-            <option value="DROPPED" className="text-red-600">DROPPED</option>
-            <option value="SUSPENDED" className="text-purple-600">SUSPENDED</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Date Enrolled (MM/DD/YY)"
-            value={formData.dateEnrolled}
-            onChange={(e) => setFormData({ ...formData, dateEnrolled: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <div className="flex justify-end">
-            <Button
-              onClick={handleUpdateStudent}
-              className="bg-(--button-green) hover:bg-(--button-hover-green) text-white px-8 py-3 text-lg rounded-full"
-            >
-              Update
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        submitLabel="Update"
+        formData={formData}
+        setFormData={setFormData}
+      />
 
-      {/* Delete Confirmation Modal */}
-      <Modal
+      <StudentDeleteModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);
           setDeletingStudent(null);
         }}
-        title="Delete Student"
-      >
-        <div className="space-y-4">
-          <p className="text-lg">
-            Are you sure you want to delete{" "}
-            <strong>{deletingStudent?.name}</strong>? This action cannot be
-            undone.
-          </p>
-          <div className="flex justify-end gap-3">
-            <Button
-              onClick={() => {
-                setIsDeleteModalOpen(false);
-                setDeletingStudent(null);
-              }}
-              className="bg-gray-400 hover:bg-gray-500 text-white px-6 py-2 rounded-full"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleDeleteStudent}
-              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full"
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onConfirm={handleDeleteStudent}
+        studentName={deletingStudent?.name}
+      />
     </div>
   );
 };

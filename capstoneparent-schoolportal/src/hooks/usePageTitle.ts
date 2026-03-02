@@ -15,6 +15,31 @@ const pageTitles: Record<string, string> = {
   '/schoolcalendar': 'School Calendar | Parent-School Portal',
   '/transparency': 'Transparency | Parent-School Portal',
   '/visionandmission': 'Vision And Mission | Parent-School Portal',
+
+  '/parentview': 'Parent View | Parent-School Portal',
+  '/classschedule': 'Class Schedule | Parent-School Portal',
+  '/quarterlygrades': 'Quarterly Grades | Parent-School Portal',
+  '/libraryrecords': 'Library Records | Parent-School Portal',
+
+  '/adminview': 'Admin Dashboard | Parent-School Portal',
+  '/manageparentverification': 'Manage Parent Verification | Parent-School Portal',
+  '/managestudents': 'Manage Students | Parent-School Portal',
+  '/managesections': 'Manage Sections | Parent-School Portal',
+  '/managestaffaccounts': 'Manage Staff Accounts | Parent-School Portal',
+
+  '/teacherview': 'Teacher Dashboard | Parent-School Portal',
+  '/classlist': 'Class List | Parent-School Portal',
+
+  '/staffview': 'Staff Dashboard | Parent-School Portal',
+  '/generalannouncement': 'General Announcement | Parent-School Portal',
+  '/staffannouncement': 'Staff Announcement | Parent-School Portal',
+  '/memorandumannouncement': 'Memorandum Announcement | Parent-School Portal',
+
+  '/librarianview': 'Librarian Dashboard | Parent-School Portal',
+  '/managebooks': 'Manage Books | Parent-School Portal',
+  '/managelearningresources': 'Manage Learning Resources | Parent-School Portal',
+  '/borrowedresources': 'Borrowed Resources | Parent-School Portal',
+  '/managecategories': 'Manage Categories | Parent-School Portal',
   
   
 }
@@ -23,7 +48,7 @@ export const usePageTitle = () => {
   const location = useLocation()
 
   useEffect(() => {
-    const title = pageTitles[location.pathname] || 'Parent-School Portal | Pagsabungan Elementary School'
+    const title = pageTitles[location.pathname] || 'Pagsabungan Elementary School | Parent-School Portal'
     document.title = title
   }, [location.pathname])
 }

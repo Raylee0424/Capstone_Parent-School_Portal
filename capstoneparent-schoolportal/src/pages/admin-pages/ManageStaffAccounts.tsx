@@ -3,7 +3,8 @@ import { Pencil, Trash2 } from "lucide-react";
 import { NavbarAdmin } from "../../components/admin/NavbarAdmin";
 import { Button } from "../../components/ui/button";
 import { StatusDropdown } from "../../components/general/StatusDropdown";
-import { Modal } from "../../components/ui/modal";
+import { StaffFormModal } from "../../components/admin/StaffFormModal";
+import { StaffDeleteModal } from "../../components/admin/StaffDeleteModal";
 
 interface Staff {
   id: number;
@@ -279,8 +280,7 @@ export const ManageStaffAccounts = () => {
         </div>
       </div>
 
-      {/* Add Staff Modal */}
-      <Modal
+      <StaffFormModal
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false);
@@ -294,84 +294,17 @@ export const ManageStaffAccounts = () => {
           });
           setSelectedRoles([]);
         }}
+        onSubmit={handleAddStaff}
         title="Add Staff"
-      >
-        <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Contact No"
-            value={formData.contactNo}
-            onChange={(e) => setFormData({ ...formData, contactNo: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Date of Birth (MM/DD/YYYY)"
-            value={formData.dateOfBirth}
-            onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Address"
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <div>
-            <label className="block text-lg font-semibold mb-2">Role/s:</label>
-            <div className="flex flex-wrap gap-2">
-              {availableRoles.map((role) => (
-                <button
-                  key={role}
-                  type="button"
-                  onClick={() => toggleRole(role)}
-                  className={`px-4 py-2 rounded-md text-base font-medium transition-colors ${
-                    selectedRoles.includes(role)
-                      ? "bg-(--button-green) text-white"
-                      : "bg-gray-400 text-white"
-                  }`}
-                >
-                  {role}
-                </button>
-              ))}
-            </div>
-          </div>
-          <select
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
-          >
-            <option value="ACTIVE" className="text-green-600">ACTIVE</option>
-            <option value="INACTIVE" className="text-red-600">INACTIVE</option>
-          </select>
-          <div className="flex justify-end">
-            <Button
-              onClick={handleAddStaff}
-              className="bg-(--button-green) hover:bg-(--button-hover-green) text-white px-8 py-3 text-lg rounded-full"
-            >
-              Add
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        submitLabel="Add"
+        formData={formData}
+        setFormData={setFormData}
+        selectedRoles={selectedRoles}
+        availableRoles={availableRoles}
+        onToggleRole={toggleRole}
+      />
 
-      {/* Edit Staff Modal */}
-      <Modal
+      <StaffFormModal
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
@@ -386,116 +319,25 @@ export const ManageStaffAccounts = () => {
           });
           setSelectedRoles([]);
         }}
+        onSubmit={handleUpdateStaff}
         title="Edit Account"
-      >
-        <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Contact No"
-            value={formData.contactNo}
-            onChange={(e) => setFormData({ ...formData, contactNo: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Date of Birth (MM/DD/YYYY)"
-            value={formData.dateOfBirth}
-            onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Address"
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <div>
-            <label className="block text-lg font-semibold mb-2">Role/s:</label>
-            <div className="flex flex-wrap gap-2">
-              {availableRoles.map((role) => (
-                <button
-                  key={role}
-                  type="button"
-                  onClick={() => toggleRole(role)}
-                  className={`px-4 py-2 rounded-md text-base font-medium transition-colors ${
-                    selectedRoles.includes(role)
-                      ? "bg-(--button-green) text-white"
-                      : "bg-gray-400 text-white"
-                  }`}
-                >
-                  {role}
-                </button>
-              ))}
-            </div>
-          </div>
-          <select
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
-          >
-            <option value="ACTIVE" className="text-green-600">ACTIVE</option>
-            <option value="INACTIVE" className="text-red-600">INACTIVE</option>
-          </select>
-          <div className="flex justify-end">
-            <Button
-              onClick={handleUpdateStaff}
-              className="bg-(--button-green) hover:bg-(--button-hover-green) text-white px-8 py-3 text-lg rounded-full"
-            >
-              Save Changes
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        submitLabel="Save Changes"
+        formData={formData}
+        setFormData={setFormData}
+        selectedRoles={selectedRoles}
+        availableRoles={availableRoles}
+        onToggleRole={toggleRole}
+      />
 
-      {/* Delete Confirmation Modal */}
-      <Modal
+      <StaffDeleteModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);
           setDeletingStaff(null);
         }}
-        title="Delete Staff"
-      >
-        <div className="space-y-4">
-          <p className="text-lg">
-            Are you sure you want to delete{" "}
-            <strong>{deletingStaff?.name}</strong>? This action cannot be
-            undone.
-          </p>
-          <div className="flex justify-end gap-3">
-            <Button
-              onClick={() => {
-                setIsDeleteModalOpen(false);
-                setDeletingStaff(null);
-              }}
-              className="bg-gray-400 hover:bg-gray-500 text-white px-6 py-2 rounded-full"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleDeleteStaff}
-              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full"
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onConfirm={handleDeleteStaff}
+        staffName={deletingStaff?.name}
+      />
     </div>
   );
 };

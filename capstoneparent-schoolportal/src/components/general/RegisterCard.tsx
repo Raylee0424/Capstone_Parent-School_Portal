@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Trash2, Upload, Plus } from "lucide-react"
@@ -15,6 +15,7 @@ export const RegisterCard = ()  =>{
     confirmPassword: ""
   })
   const [students, setStudents] = useState([{ id: 1, lrn: "" }])
+  const nextStudentId = useRef(2)
   const [uploadedFiles, setUploadedFiles] = useState<{ id: number; file: File }[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [showModal, setShowModal] = useState(false)
@@ -24,17 +25,21 @@ export const RegisterCard = ()  =>{
   }
 
   const handleStudentChange = (id: number, lrn: string) => {
-    setStudents(students.map(student =>
-      student.id === id ? { ...student, lrn } : student
-    ))
+    setStudents(prevStudents =>
+      prevStudents.map(student =>
+        student.id === id ? { ...student, lrn } : student
+      )
+    )
   }
 
   const addStudent = () => {
-    setStudents([...students, { id: students.length + 1, lrn: "" }])
+    const id = nextStudentId.current
+    nextStudentId.current += 1
+    setStudents(prevStudents => [...prevStudents, { id, lrn: "" }])
   }
 
   const removeStudent = (id: number) => {
-    setStudents(students.filter(student => student.id !== id))
+    setStudents(prevStudents => prevStudents.filter(student => student.id !== id))
   }
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,6 +212,7 @@ export const RegisterCard = ()  =>{
 
               {/* Add Another Student Button */}
               <Button
+                type="button"
                 onClick={addStudent}
                 className="w-full h-12 rounded-lg bg-[#52a86a] hover:bg-[#449558] text-white font-semibold text-lg flex items-center justify-center gap-2"
               >

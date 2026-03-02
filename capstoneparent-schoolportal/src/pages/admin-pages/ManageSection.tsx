@@ -2,7 +2,8 @@ import { Search, Pencil, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-
 import { useState, useMemo } from "react";
 import { NavbarAdmin } from "../../components/admin/NavbarAdmin";
 import { Button } from "../../components/ui/button";
-import { Modal } from "../../components/ui/modal";
+import { SectionFormModal } from "../../components/admin/SectionFormModal";
+import { SectionDeleteModal } from "../../components/admin/SectionDeleteModal";
 
 interface Section {
   id: number;
@@ -273,139 +274,42 @@ export const ManageSection = () => {
         </div>
       </div>
 
-      {/* Add Section Modal */}
-      <Modal
+      <SectionFormModal
         isOpen={isAddModalOpen}
         onClose={() => {
           setIsAddModalOpen(false);
           setFormData({ name: "", adviser: "", students: 0 });
         }}
+        onSubmit={handleAddSection}
         title="Add Section"
-      >
-        <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Section name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Adviser name"
-            value={formData.adviser}
-            onChange={(e) =>
-              setFormData({ ...formData, adviser: e.target.value })
-            }
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="number"
-            placeholder="Number of students"
-            value={formData.students || ""}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                students: parseInt(e.target.value) || 0,
-              })
-            }
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <div className="flex justify-end">
-            <Button
-              onClick={handleAddSection}
-              className="bg-(--button-green) hover:bg-(--button-hover-green) text-white px-8 py-3 text-lg rounded-full"
-            >
-              Add
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        submitLabel="Add"
+        formData={formData}
+        setFormData={setFormData}
+      />
 
-      {/* Edit Section Modal */}
-      <Modal
+      <SectionFormModal
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
           setEditingSection(null);
           setFormData({ name: "", adviser: "", students: 0 });
         }}
+        onSubmit={handleUpdateSection}
         title="Edit Section"
-      >
-        <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Section name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Adviser name"
-            value={formData.adviser}
-            onChange={(e) =>
-              setFormData({ ...formData, adviser: e.target.value })
-            }
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <input
-            type="number"
-            placeholder="Number of students"
-            value={formData.students || ""}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                students: parseInt(e.target.value) || 0,
-              })
-            }
-            className="w-full px-4 py-3 text-lg border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green) placeholder-gray-400"
-          />
-          <div className="flex justify-end">
-            <Button
-              onClick={handleUpdateSection}
-              className="bg-(--button-green) hover:bg-(--button-hover-green) text-white px-8 py-3 text-lg rounded-full"
-            >
-              Update
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        submitLabel="Update"
+        formData={formData}
+        setFormData={setFormData}
+      />
 
-      {/* Delete Confirmation Modal */}
-      <Modal
+      <SectionDeleteModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);
           setDeletingSection(null);
         }}
-        title="Delete Section"
-      >
-        <div className="space-y-4">
-          <p className="text-lg">
-            Are you sure you want to delete{" "}
-            <strong>{deletingSection?.name}</strong>? This action cannot be
-            undone.
-          </p>
-          <div className="flex justify-end gap-3">
-            <Button
-              onClick={() => {
-                setIsDeleteModalOpen(false);
-                setDeletingSection(null);
-              }}
-              className="bg-gray-400 hover:bg-gray-500 text-white px-6 py-2 rounded-full"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleDeleteSection}
-              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full"
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        onConfirm={handleDeleteSection}
+        sectionName={deletingSection?.name}
+      />
     </div>
   );
 };

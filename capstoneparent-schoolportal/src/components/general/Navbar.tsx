@@ -7,6 +7,15 @@ export const Navbar = () => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const location = useLocation();
   const isRegisterPage = location.pathname === "/register";
+  const aboutRoutes = [
+    "/contactus",
+    "/history",
+    "/orginizationalchart",
+    "/schoolcalendar",
+    "/transparency",
+    "/visionandmission",
+  ];
+  const isAboutSelected = aboutRoutes.includes(location.pathname);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -40,7 +49,7 @@ export const Navbar = () => {
             <div className="relative">
               <a
                 className={`text-gray-900 hover:text-gray-700 transition-colors cursor-pointer ${
-                  location.pathname.startsWith("/") && !location.pathname.startsWith("/announcements") && !location.pathname.startsWith("/partnership") && !location.pathname.startsWith("/learn")
+                  isAboutSelected
                     ? "text-xl font-bold"
                     : "text-lg font-medium"
                 }`}
