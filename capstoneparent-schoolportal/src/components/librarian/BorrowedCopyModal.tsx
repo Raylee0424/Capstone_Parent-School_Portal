@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, ChevronDown, Search } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 import BorrowerDetailsModal from './BorrowerDetailsModal';
 
 type CopyStatus = 'BORROWED' | 'AVAILABLE' | 'LOST' | 'GIVEN';
@@ -73,15 +73,15 @@ const statusOptions: CopyStatus[] = ['BORROWED', 'AVAILABLE', 'LOST', 'GIVEN'];
 
 const statusBgClass = (status: CopyStatus) => {
 	if (status === 'AVAILABLE') {
-		return 'bg-[#2cc84d] text-[#1e2b1f]';
+		return 'bg-green-100 text-green-700';
 	}
 	if (status === 'LOST') {
-		return 'bg-[#e74a15] text-[#2b1c1b]';
+		return 'bg-red-100 text-red-700';
 	}
 	if (status === 'GIVEN') {
-		return 'bg-[#f3b41b] text-[#2b241a]';
+		return 'bg-amber-100 text-amber-700';
 	}
-	return 'bg-[#e8e821] text-[#343434]';
+	return 'bg-blue-100 text-blue-700';
 };
 
 const BorrowedCopyModal: React.FC = () => {
@@ -122,23 +122,17 @@ const BorrowedCopyModal: React.FC = () => {
 
 	return (
 		<>
-			<div className="mx-auto max-w-[1120px] border border-[#d0d0d0] bg-gradient-to-br from-[#ececec] via-[#e8e8e8] to-[#dfdfdf] p-5 shadow-inner sm:p-10">
-			<div className="rounded-sm border border-[#d9d9d9] bg-[#e6e6e6] p-4 sm:p-6">
-				<div className="flex flex-col gap-3">
-					<div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
+			<div className="mx-auto max-w-280 rounded-lg bg-white shadow-md p-6">
+				<div className="flex flex-col gap-4">
+					<div className="relative">
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
 						<input
 							type="text"
 							value={searchTerm}
 							onChange={(event) => setSearchTerm(event.target.value)}
-							placeholder="Search Item"
-							className="h-[56px] rounded-sm border border-[#cecece] bg-[#f7f7f7] px-5 text-2xl text-[#3f3f3f] outline-none placeholder:text-[#7f7f7f]"
+							placeholder="Search item"
+							className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
 						/>
-						<button
-							type="button"
-							className="flex h-[56px] w-[86px] items-center justify-center rounded-sm bg-[#53ba62] text-[#111111] shadow-sm transition hover:brightness-95"
-						>
-							<Search size={38} strokeWidth={2.4} />
-						</button>
 					</div>
 
 					<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -146,7 +140,7 @@ const BorrowedCopyModal: React.FC = () => {
 							<select
 								value={statusFilter}
 								onChange={(event) => setStatusFilter(event.target.value)}
-								className="h-[50px] w-full appearance-none rounded-sm border border-[#8c8f93] bg-gradient-to-r from-[#8f9399] to-[#7a7e84] px-5 pr-14 text-2xl text-[#efefef] outline-none"
+								className="w-full appearance-none px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
 							>
 								<option>All</option>
 								<option>BORROWED</option>
@@ -154,93 +148,94 @@ const BorrowedCopyModal: React.FC = () => {
 								<option>LOST</option>
 								<option>GIVEN</option>
 							</select>
-							<ChevronDown size={36} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#f2f2f2]" />
+							<ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
 						</div>
 
 						<div className="relative">
 							<select
 								value={subjectFilter}
 								onChange={(event) => setSubjectFilter(event.target.value)}
-								className="h-[50px] w-full appearance-none rounded-sm border border-[#8c8f93] bg-gradient-to-r from-[#8f9399] to-[#7a7e84] px-5 pr-14 text-2xl text-[#efefef] outline-none"
+								className="w-full appearance-none px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
 							>
 								<option>Subject</option>
 								<option>Science</option>
 								<option>Game</option>
 							</select>
-							<ChevronDown size={36} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#f2f2f2]" />
+							<ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
 						</div>
 
 						<div className="relative">
 							<select
 								value={gradeFilter}
 								onChange={(event) => setGradeFilter(event.target.value)}
-								className="h-[50px] w-full appearance-none rounded-sm border border-[#8c8f93] bg-gradient-to-r from-[#8f9399] to-[#7a7e84] px-5 pr-14 text-2xl text-[#efefef] outline-none"
+								className="w-full appearance-none px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
 							>
 								<option>Grade Level</option>
 								<option>Grade 1</option>
 								<option>Grade 2</option>
 								<option>Grade 3</option>
 							</select>
-							<ChevronDown size={36} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#f2f2f2]" />
+							<ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
 						</div>
 					</div>
-				</div>
-			</div>
 
-				<div className="mt-5 border-t border-[#d0d0d0] pt-5">
-					<div className="flex flex-col gap-4">
-					{filteredItems.map((item) => (
-						<div
-							key={item.id}
-							className="grid grid-cols-1 items-center gap-4 rounded-[18px] border border-[#5ba870] bg-gradient-to-r from-[#48b668] to-[#55b06d] px-5 py-4 shadow-md sm:grid-cols-[1fr_auto_auto] sm:px-6"
-						>
-							<button
-								type="button"
-								onClick={() => setSelectedItem(item)}
-								className="text-left"
+					<div className="space-y-3">
+						{filteredItems.length === 0 && (
+							<div className="rounded-md border border-gray-200 p-6 text-center text-gray-500">
+								No borrowed items found.
+							</div>
+						)}
+
+						{filteredItems.map((item) => (
+							<div
+								key={item.id}
+								className="rounded-md border border-gray-200 p-4"
 							>
-								<h3 className="text-[46px] font-bold leading-tight text-[#e9f0e8]">{item.title}</h3>
-								<p className="mt-2 text-[34px] font-semibold text-[#e0e8aa]">
-									Borrower: <span className="font-medium text-[#e6e6d4]">{item.borrower}</span>
-								</p>
-							</button>
+								<div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_220px] sm:items-center">
+									<button
+										type="button"
+										onClick={() => setSelectedItem(item)}
+										className="text-left cursor-pointer"
+									>
+										<h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
+										<p className="mt-1 text-sm text-gray-600">
+											Borrower: <span className="font-semibold">{item.borrower}</span>
+										</p>
+									</button>
 
-							<div className="hidden items-center justify-center sm:flex">
-								<Check size={58} strokeWidth={2.8} className="text-[#4bff76]" />
-							</div>
+									<div className="relative">
+										<button
+											type="button"
+											onClick={() => setOpenStatusForId((current) => (current === item.id ? null : item.id))}
+											className={`w-full rounded-full px-4 py-2 text-sm font-bold cursor-pointer ${statusBgClass(item.status)}`}
+										>
+											{item.status}
+										</button>
 
-							<div className="relative min-w-[280px]">
-								<button
-									type="button"
-									onClick={() => setOpenStatusForId((current) => (current === item.id ? null : item.id))}
-									className={`h-[44px] w-full rounded-[4px] px-4 text-[34px] font-medium shadow-sm ${statusBgClass(item.status)}`}
-								>
-									{item.status}
-								</button>
+										{item.dueDate && (
+											<p className={`mt-2 text-xs font-semibold ${item.isOverdue ? 'text-red-600' : 'text-green-600'}`}>
+												Due: {item.dueDate}
+											</p>
+										)}
 
-								{item.dueDate && (
-									<p className={`mt-2 border-l border-[#d8d8d8] pl-3 text-[34px] ${item.isOverdue ? 'text-[#cf3a31]' : 'text-[#dce8d8]'}`}>
-										Due: {item.dueDate}
-									</p>
-								)}
-
-								{openStatusForId === item.id && (
-									<div className="absolute right-0 top-[48px] z-20 w-full overflow-hidden rounded-b-[4px] border border-[#8a8a8a] shadow-lg">
-										{statusOptions.map((status) => (
-											<button
-												key={status}
-												type="button"
-												onClick={() => updateItemStatus(item.id, status)}
-												className={`h-[36px] w-full text-[30px] font-medium ${statusBgClass(status)}`}
-											>
-												{status}
-											</button>
-										))}
+										{openStatusForId === item.id && (
+											<div className="absolute right-0 top-10 z-20 w-full overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
+												{statusOptions.map((status) => (
+													<button
+														key={status}
+														type="button"
+														onClick={() => updateItemStatus(item.id, status)}
+														className={`w-full px-3 py-2 text-left text-xs font-semibold cursor-pointer ${statusBgClass(status)}`}
+													>
+														{status}
+													</button>
+												))}
+											</div>
+										)}
 									</div>
-								)}
+								</div>
 							</div>
-						</div>
-					))}
+						))}
 					</div>
 				</div>
 			</div>

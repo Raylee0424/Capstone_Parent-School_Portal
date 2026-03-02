@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, Globe, X } from 'lucide-react';
+import { Modal } from '../ui/modal';
 
 type BorrowCopyStatus = 'BORROWED' | 'AVAILABLE' | 'LOST' | 'GIVEN';
 
@@ -44,78 +44,43 @@ const BorrowerDetailsModal: React.FC<BorrowerDetailsModalProps> = ({
 	};
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2 backdrop-blur-sm sm:p-4">
-			<div className="relative w-full max-w-[1180px] overflow-hidden border border-[#7b7b7b] bg-[#e3e3e3] px-5 pb-8 pt-5 shadow-2xl sm:px-10 sm:pb-10 sm:pt-8">
-				<div className="pointer-events-none absolute -bottom-24 right-[-58px] opacity-90">
-					<Globe size={430} strokeWidth={1.5} className="text-[#08ba66]" />
+		<Modal isOpen={true} onClose={onClose} title="Borrower Details">
+			<div className="space-y-4">
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_220px]">
+					<div className="rounded-md bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-800">
+						ITEM NAME: {itemName}
+					</div>
+					<select
+						value={selectedStatus}
+						onChange={(event) => handleStatusChange(event.target.value as BorrowCopyStatus)}
+						className="w-full px-4 py-3 text-sm font-semibold border-2 border-black rounded-md focus:outline-none focus:ring-2 focus:ring-(--button-green)"
+					>
+						{statusOptions.map((option) => (
+							<option key={option} value={option}>
+								{option}
+							</option>
+						))}
+					</select>
 				</div>
 
-				<button
-					type="button"
-					onClick={onClose}
-					className="absolute right-6 top-4 text-[#f31212] transition hover:opacity-80"
-				>
-					<X size={54} strokeWidth={2.2} />
-				</button>
-
-				<div className="relative z-10 flex flex-col gap-7">
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:pr-16">
-						<div className="flex h-[58px] items-center rounded-[2px] bg-[#7f7f7f] px-7 text-[38px] text-[#ececec]">
-							<span className="font-semibold">ITEM NAME:</span>
-							<span className="ml-2 font-normal">{itemName}</span>
-						</div>
-
-						<div className="relative w-full sm:w-[270px]">
-							<select
-								value={selectedStatus}
-								onChange={(event) => handleStatusChange(event.target.value as BorrowCopyStatus)}
-								className="h-[58px] w-full appearance-none rounded-[2px] border-none bg-[#e8f00d] px-7 pr-14 text-[36px] font-medium text-[#101010] outline-none"
-							>
-								{statusOptions.map((option) => (
-									<option key={option} value={option}>
-										{option}
-									</option>
-								))}
-							</select>
-							<ChevronDown size={34} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-black" />
-						</div>
+				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+					<div className="rounded-md border border-gray-200 p-3">
+						<p className="text-sm font-bold text-gray-700">Time Borrowed</p>
+						<p className="text-sm text-gray-600">{borrowedDate} {borrowedTime}</p>
 					</div>
-
-					<div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-						<div>
-							<h2 className="text-[58px] font-semibold leading-none text-[#121212]">Time Borrowed:</h2>
-							<div className="mt-3 flex items-center gap-8 text-[42px] text-[#1b1b1b]">
-								<span>{borrowedDate}</span>
-								<span>{borrowedTime}</span>
-							</div>
-						</div>
-
-						<div>
-							<h2 className="text-[58px] font-semibold leading-none text-[#121212]">Due:</h2>
-							<div className="mt-3 flex items-center gap-8 text-[42px] text-[#1b1b1b]">
-								<span>{dueDate}</span>
-								<span>{dueTime}</span>
-							</div>
-						</div>
+					<div className="rounded-md border border-gray-200 p-3">
+						<p className="text-sm font-bold text-gray-700">Due</p>
+						<p className="text-sm text-gray-600">{dueDate} {dueTime}</p>
 					</div>
+				</div>
 
-					<div className="mt-8">
-						<h2 className="text-[58px] font-semibold leading-none text-[#121212]">Borrower:</h2>
-						<div className="mt-4 space-y-1 text-[42px] leading-tight text-[#121212]">
-							<p>
-								<span className="font-semibold">Name:</span> {borrowerName}
-							</p>
-							<p>
-								<span className="font-semibold">Grade Level:</span> {gradeLevel}
-							</p>
-							<p>
-								<span className="font-semibold">Section:</span> {section}
-							</p>
-						</div>
-					</div>
+				<div className="rounded-md border border-gray-200 p-3 space-y-1 text-sm text-gray-700">
+					<p><span className="font-bold">Name:</span> {borrowerName}</p>
+					<p><span className="font-bold">Grade Level:</span> {gradeLevel}</p>
+					<p><span className="font-bold">Section:</span> {section}</p>
 				</div>
 			</div>
-		</div>
+		</Modal>
 	);
 };
 
