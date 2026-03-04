@@ -71,85 +71,56 @@ export const SignInCard = () => {
 	}
 	
 	return (
-		<div className="mx-auto w-full max-w-6xl px-4 py-12 md:py-16">
-			<div className="overflow-hidden rounded-3xl border border-(--button-green)/25 bg-(--signin-bg) shadow-xl">
-				<div className="grid grid-cols-1 md:grid-cols-2">
-					<div className="flex flex-col justify-between bg-(--button-green) p-8 text-white md:p-10">
-						<div>
-							<div className="mb-6 flex items-center gap-3">
-								<div className="relative h-14 w-14 shrink-0 rounded-full bg-white/20 p-2">
-									<img src="/Logo.png" alt="Bayog Elementary National School Logo" className="h-full w-full object-contain" />
-								</div>
-								<p className="text-sm font-semibold uppercase tracking-wider">Parent-School Portal</p>
-							</div>
-							<h1 className="text-4xl font-bold leading-tight">Welcome Back</h1>
-							<p className="mt-3 text-sm text-white/90">
-								Sign in to access student records, updates, and your personalized dashboard.
-							</p>
-						</div>
-						<div className="mt-8 rounded-2xl border border-white/30 bg-white/10 p-4 text-sm backdrop-blur-sm">
-							<p className="mb-2 font-semibold">Dummy Accounts (Temporary)</p>
-							<ul className="space-y-1.5 text-white/95">
-								<li>Admin: admin@portal.com / admin123</li>
-								<li>Teacher: teacher@portal.com / teacher123</li>
-								<li>Librarian: librarian@portal.com / librarian123</li>
-								<li>Parent 1: parent1@portal.com / parent123</li>
-								<li>Parent 2: parent2@portal.com / parent123</li>
-							</ul>
-						</div>
-					</div>
-
-					<div className="p-8 md:p-10">
-						<div className="mb-8">
-							<h2 className="text-3xl font-bold text-gray-900">Login</h2>
-							<p className="mt-1 text-sm text-gray-600">Enter your credentials to continue.</p>
-						</div>
-
-						<form onSubmit={handleSubmit} className="space-y-5">
-							<div className="space-y-2">
-								<label className="text-sm font-medium text-gray-700">Email</label>
-								<Input
-									type="email"
-									placeholder="you@example.com"
-									value={email}
-									onChange={(e) => setEmail(e.target.value)}
-									required
-									className="h-12 rounded-xl border border-gray-300 bg-white px-4 text-base placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-(--button-green)"
-								/>
-							</div>
-
-							<div className="space-y-2">
-								<label className="text-sm font-medium text-gray-700">Password</label>
-								<Input
-									type="password"
-									placeholder="Enter your password"
-									value={password}
-									onChange={(e) => setPassword(e.target.value)}
-									required
-									className="h-12 rounded-xl border border-gray-300 bg-white px-4 text-base placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-(--button-green)"
-								/>
-							</div>
-
-							<div className="flex items-center justify-between text-sm">
-								<span className="text-gray-600">Forgot your password?</span>
-								<Link to="/forgotpassword" className="font-semibold text-(--button-green) hover:underline">
-									Reset here
-								</Link>
-							</div>
-
-							{errorMessage ? (
-								<p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{errorMessage}</p>
-							) : null}
-
-							<Button
-								type="submit"
-								className="h-12 w-full rounded-xl bg-(--button-green) text-base font-semibold text-white transition-colors hover:bg-(--button-hover-green)"
-							>
-								Sign In
-							</Button>
-						</form>
-					</div>
+		<div className="min-h-[calc(100vh-96px)] bg-white px-4 py-12 md:py-16">
+			<div className="mx-auto w-full max-w-xl rounded-2xl bg-(--signin-bg) px-8 py-10 md:px-12 md:py-12">
+				<div className="mb-8 flex items-center gap-3">
+					<img
+						src="/Logo.png"
+						alt="Bayog Elementary National School Logo"
+						className="h-16 w-16 object-contain"
+					/>
+					<h1 className="text-4xl font-bold text-gray-900">Login</h1>
 				</div>
+
+				<form onSubmit={handleSubmit} className="space-y-5">
+					<Input
+						type="email"
+						placeholder="Email"
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						required
+						className="h-13 rounded-2xl border border-gray-500 bg-gray-100 px-6 text-3xl text-gray-800 placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-(--button-green)"
+					/>
+
+					<Input
+						type="password"
+						placeholder="Password"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						required
+						className="h-13 rounded-2xl border border-gray-500 bg-gray-100 px-6 text-3xl text-gray-800 placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-(--button-green)"
+					/>
+
+					<p className="text-sm text-gray-900">
+						Forgot password?{" "}
+						<Link to="/forgotpassword" className="font-medium text-blue-600 hover:underline">
+							Click here
+						</Link>
+					</p>
+
+					{errorMessage ? (
+						<p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{errorMessage}</p>
+					) : null}
+
+					<div className="pt-3 text-center">
+						<Button
+							type="submit"
+							className="h-12 min-w-36 rounded-full bg-(--button-green) px-10 text-2xl font-semibold text-white transition-colors hover:bg-(--button-hover-green)"
+						>
+							Sign In
+						</Button>
+					</div>
+				</form>
 			</div>
 		</div>
 	)
