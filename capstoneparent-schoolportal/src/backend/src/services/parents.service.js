@@ -57,6 +57,10 @@ const parentsService = {
   },
 
   async submitRegistration({ parent_id, student_ids, file_ids }) {
+    // Coerce IDs to integers — form data and JSON arrays may contain strings
+    const parsedStudentIds = (student_ids || []).map((id) => parseInt(id, 10));
+    const parsedFileIds = (file_ids || []).map((id) => parseInt(id, 10));
+
     // Check if parent exists
     const parent = await prisma.user.findUnique({
       where: { user_id: parent_id },
@@ -78,18 +82,18 @@ const parentsService = {
 
     // Check if all students exist
     const students = await prisma.student.findMany({
-      where: { student_id: { in: student_ids } },
+      where: { student_id: { in: parsedStudentIds } },
     });
-    if (students.length !== student_ids.length) {
+    if (students.length !== parsedStudentIds.length) {
       throw new Error("One or more students not found");
     }
 
     // Check if all file IDs exist
-    if (file_ids && file_ids.length > 0) {
+    if (parsedFileIds.length > 0) {
       const files = await prisma.file.findMany({
-        where: { file_id: { in: file_ids } },
+        where: { file_id: { in: parsedFileIds } },
       });
-      if (files.length !== file_ids.length) {
+      if (files.length !== parsedFileIds.length) {
         throw new Error("One or more files not found");
       }
     }
@@ -98,17 +102,18 @@ const parentsService = {
       data: {
         parent_id,
         students: {
-          create: student_ids.map((studentId) => ({
+          create: parsedStudentIds.map((studentId) => ({
             student_id: studentId,
           })),
         },
-        files: file_ids
-          ? {
-              create: file_ids.map((fileId) => ({
-                file_id: fileId,
-              })),
-            }
-          : undefined,
+        files:
+          parsedFileIds.length > 0
+            ? {
+                create: parsedFileIds.map((fileId) => ({
+                  file_id: fileId,
+                })),
+              }
+            : undefined,
       },
       include: {
         students: {

@@ -3,13 +3,14 @@ const { body, param } = require("express-validator");
 const authController = require("../controllers/auth.controller");
 const validate = require("../middlewares/validation");
 const { authenticate } = require("../middlewares/auth");
-
 const multer = require("multer");
-const upload = multer({ dest: process.env.UPLOAD_PATH || "uploads/" });
 
+const upload = multer({ dest: process.env.UPLOAD_PATH || "uploads/" });
 const router = express.Router();
 
-// Register (supports combined parent account + registration)
+// ─── Registration (2-step: initiate → verify) ──────────────────────────────
+
+// Step 1: Validate data, store pending, send OTP — no DB write yet
 router.post(
   "/register",
   upload.array("attachments", 10),
@@ -20,7 +21,6 @@ router.post(
     body("lname").notEmpty().trim(),
     body("contact_num").notEmpty(),
     body("address").notEmpty(),
-    // optional role (default Parent when student_ids provided)
     body("role")
       .optional()
       .isIn([
@@ -31,7 +31,6 @@ router.post(
         "Principal",
         "Vice_Principal",
       ]),
-    // parent-specific fields
     body("student_ids").optional().isArray({ min: 1 }),
     body("student_ids.*").optional().isInt(),
   ],
@@ -39,7 +38,19 @@ router.post(
   authController.register,
 );
 
-// Login
+// Step 2: Verify OTP → create account as Inactive
+router.post(
+  "/verify-registration-otp",
+  [
+    body("email").isEmail().normalizeEmail(),
+    body("otpCode").isLength({ min: 6, max: 6 }),
+  ],
+  validate,
+  authController.verifyRegistrationOTP,
+);
+
+// ─── Login ──────────────────────────────────────────────────────────────────
+
 router.post(
   "/login",
   [
@@ -51,15 +62,14 @@ router.post(
   authController.login,
 );
 
-// Send OTP (general purpose / email verification)
+// ─── OTP (general-purpose / post-login MFA) ─────────────────────────────────
+
 router.post(
   "/send-otp",
   [body("email").isEmail().normalizeEmail()],
   validate,
   authController.sendOTP,
 );
-
-// Verify OTP
 router.post(
   "/verify-otp",
   [
@@ -69,15 +79,12 @@ router.post(
   validate,
   authController.verifyOTP,
 );
-
-// alias endpoints for email verification clarity
 router.post(
   "/send-email-otp",
   [body("email").isEmail().normalizeEmail()],
   validate,
   authController.sendOTP,
 );
-
 router.post(
   "/verify-email-otp",
   [
@@ -88,10 +95,10 @@ router.post(
   authController.verifyOTP,
 );
 
-// Logout
-router.post("/logout", authenticate, authController.logout);
+// ─── Authenticated routes ────────────────────────────────────────────────────
 
-// Trusted devices management
+router.post("/logout", authenticate, authController.logout);
+router.get("/me", authenticate, authController.getCurrentUser);
 router.get("/trusted-devices", authenticate, authController.getTrustedDevices);
 router.delete(
   "/trusted-devices/:id",
@@ -100,8 +107,5 @@ router.delete(
   validate,
   authController.removeTrustedDevice,
 );
-
-// Get current user
-router.get("/me", authenticate, authController.getCurrentUser);
 
 module.exports = router;
