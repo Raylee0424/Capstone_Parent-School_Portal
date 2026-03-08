@@ -1,5 +1,5 @@
 const prisma = require("../config/database");
-const { uploadFile } = require("../utils/supabaseStorage");
+const { uploadFiles } = require("../utils/supabaseStorage");
 const { findOrThrow } = require("../utils/findOrThrow");
 
 /**
@@ -20,44 +20,47 @@ const { findOrThrow } = require("../utils/findOrThrow");
 
 const parentsService = {
   /**
-   * Upload multer file objects to Supabase Storage and persist File records.
+   * Upload multer file objects to Supabase Storage in parallel and persist
+   * File records.
    *
-   * uploadFile() returns the permanent public URL, which is stored directly
-   * in File.file_path — no URL generation step is needed on reads.
+   * uploadFiles() uploads all files concurrently and returns an array of
+   * permanent signed URLs in the same order as the input. Each URL is stored
+   * directly in File.file_path — no URL generation step is needed on reads.
    *
    * Precondition: the User row for `uploaded_by` must already exist in the DB
    * because File.uploaded_by is a non-nullable FK referencing User.user_id.
    *
    * @param {Array<{originalname,path,mimetype,size}>} files  multer file objects
    * @param {number} uploaded_by  user_id of the owning user
-   * @returns {Promise<Array>} created File records (file_path = public URL)
+   * @returns {Promise<Array>} created File records (file_path = signed URL)
    */
   async createFiles(files, uploaded_by) {
-    // Guard: gives a clear error instead of a cryptic FK violation
+    if (!files || files.length === 0) return [];
+
     await findOrThrow(
       () => prisma.user.findUnique({ where: { user_id: uploaded_by } }),
       "Uploader not found",
     );
 
-    const created = [];
+    // Upload all files to Supabase in parallel — returns signed URLs in input order
+    const signedUrls = await uploadFiles(files);
 
-    for (const f of files) {
-      // Step 1 — upload to Supabase, receive permanent public URL
-      const publicUrl = await uploadFile(f);
+    // Persist all File rows using createMany for a single DB round-trip
+    const fileData = files.map((f, i) => ({
+      file_name: f.originalname,
+      file_path: signedUrls[i],
+      file_type: f.mimetype,
+      file_size: f.size,
+      uploaded_by,
+    }));
 
-      // Step 2 — persist File row; file_path stores the URL, not a storage key
-      const file = await prisma.file.create({
-        data: {
-          file_name: f.originalname,
-          file_path: publicUrl, // ← public URL, readable immediately on any request
-          file_type: f.mimetype,
-          file_size: f.size,
-          uploaded_by, // ← FK → User.user_id (user must already exist)
-        },
-      });
+    await prisma.file.createMany({ data: fileData });
 
-      created.push(file);
-    }
+    // createMany does not return created rows — fetch them back by matching
+    // the signed URLs which are guaranteed unique per upload
+    const created = await prisma.file.findMany({
+      where: { file_path: { in: signedUrls } },
+    });
 
     return created;
   },
@@ -112,7 +115,7 @@ const parentsService = {
       },
       include: {
         students: { include: { student: true } },
-        files: { include: { file: true } }, // file.file_path is already a public URL
+        files: { include: { file: true } },
       },
     });
 
@@ -144,7 +147,7 @@ const parentsService = {
           students: {
             include: { student: { include: { grade_level: true } } },
           },
-          files: { include: { file: true } }, // file_path is already a URL
+          files: { include: { file: true } },
           verifier: { select: { user_id: true, fname: true, lname: true } },
         },
         orderBy: { submitted_at: "desc" },
@@ -179,7 +182,7 @@ const parentsService = {
         students: {
           include: { student: { include: { grade_level: true } } },
         },
-        files: { include: { file: true } }, // file_path is already a URL
+        files: { include: { file: true } },
         verifier: { select: { user_id: true, fname: true, lname: true } },
       },
     });

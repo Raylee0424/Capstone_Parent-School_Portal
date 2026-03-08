@@ -7,7 +7,7 @@ const crypto = require("crypto");
  * HOW TO SET UP THE BUCKET (one-time manual step):
  *
  *   1. Supabase Dashboard → Storage → New Bucket
- *   2. Name it to match SUPABASE_BUCKET in your .env (default: "parent-files")
+ *   2. Name it to match SUPABASE_BUCKET in your .env (default: "parent-docs")
  *   3. Leave it PRIVATE (do NOT toggle "Public bucket")
  *   4. Click Create
  *
@@ -20,14 +20,20 @@ const crypto = require("crypto");
  * SIGNED URLS:
  *   Private buckets require a signed URL for every file read. We generate one
  *   immediately after upload and store it in File.file_path so reads need no
- *   extra Supabase call. Expiry is set to 10 years (effectively permanent).
+ *   extra Supabase call. Supabase caps signed URLs at 2 years max.
  */
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".pdf"];
 
-// 10 years in seconds
-const SIGNED_URL_EXPIRES_IN = process.env.SIGNED_URL_EXPIRES_IN;
+// Supabase's maximum allowed expiry for signed URLs is 2 years
+const TWO_YEARS_IN_SECONDS = 2 * 365 * 24 * 60 * 60; // 63,072,000
+
+const _parsed = parseInt(process.env.SIGNED_URL_EXPIRES_IN, 10);
+const expiresIn =
+  Number.isInteger(_parsed) && _parsed > 0
+    ? Math.min(_parsed, TWO_YEARS_IN_SECONDS)
+    : TWO_YEARS_IN_SECONDS;
 
 let _supabase = null;
 
@@ -48,7 +54,7 @@ const getClient = () => {
 
   _supabase = createClient(url, key, {
     auth: {
-      persistSession: false, // server-side client — no session needed
+      persistSession: false,
       autoRefreshToken: false,
     },
   });
@@ -57,8 +63,7 @@ const getClient = () => {
 };
 
 /**
- * Upload a single multer file object to an existing Supabase Storage bucket
- * and return a long-lived signed URL.
+ * Upload a single multer file object to Supabase Storage and return a signed URL.
  *
  * Flow:
  *   1. Validate file type (jpg, jpeg, png, pdf only)
@@ -68,7 +73,7 @@ const getClient = () => {
  *   5. Generate a signed URL and return it — caller stores this in File.file_path
  *
  * @param {{ path: string, originalname: string, mimetype: string, size: number }} file
- * @returns {Promise<string>}
+ * @returns {Promise<string>} signed URL
  */
 const uploadFile = async (file) => {
   const supabase = getClient();
@@ -100,7 +105,7 @@ const uploadFile = async (file) => {
       upsert: false,
     });
 
-  // Always clean up the multer temp file
+  // Always clean up the multer temp file regardless of upload result
   try {
     fs.unlinkSync(file.path);
   } catch (_) {}
@@ -109,9 +114,10 @@ const uploadFile = async (file) => {
     throw new Error(`Supabase upload failed: ${uploadError.message}`);
   }
 
+  // Math.floor guarantees a whole integer is passed — Supabase rejects floats
   const { data: signedData, error: signedError } = await supabase.storage
     .from(BUCKET)
-    .createSignedUrl(storageKey, { expiresIn: SIGNED_URL_EXPIRES_IN });
+    .createSignedUrl(storageKey, Math.floor(expiresIn));
 
   if (signedError || !signedData?.signedUrl) {
     throw new Error(
@@ -122,4 +128,19 @@ const uploadFile = async (file) => {
   return signedData.signedUrl;
 };
 
-module.exports = { uploadFile };
+/**
+ * Upload multiple multer file objects to Supabase Storage in parallel.
+ *
+ * All files are uploaded concurrently via Promise.all. If any single file
+ * fails (invalid type, upload error, signed URL error), the entire batch
+ * rejects and all successfully written temp files are cleaned up.
+ *
+ * @param {{ path: string, originalname: string, mimetype: string, size: number }[]} files
+ * @returns {Promise<string[]>} array of signed URLs in the same order as input files
+ */
+const uploadFiles = async (files) => {
+  if (!files || files.length === 0) return [];
+  return Promise.all(files.map((file) => uploadFile(file)));
+};
+
+module.exports = { uploadFile, uploadFiles };

@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
 const prisma = require("../config/database");
 const {
   hashPassword,
@@ -14,6 +15,20 @@ const pendingRegistrations = new Map();
 
 const PENDING_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
+/**
+ * Delete all multer temp files stored in a pending registration entry.
+ * Called on expiry, wrong OTP, or any failure after files were stored.
+ * Silent — a missing temp file is not an error.
+ */
+function cleanupTempFiles(pending) {
+  if (!pending?.filePaths?.length) return;
+  for (const f of pending.filePaths) {
+    try {
+      if (f.path) fs.unlinkSync(f.path);
+    } catch (_) {}
+  }
+}
+
 function storePendingRegistration(email, data) {
   pendingRegistrations.set(email, {
     ...data,
@@ -25,6 +40,7 @@ function getPendingRegistration(email) {
   const entry = pendingRegistrations.get(email);
   if (!entry) return null;
   if (Date.now() > entry.expiresAt) {
+    cleanupTempFiles(entry); // ← clean up temp files before dropping the entry
     pendingRegistrations.delete(email);
     return null;
   }
@@ -46,9 +62,13 @@ function signToken(user) {
 
 const authService = {
   /**
-   * Step 1 of registration: validate uniqueness, persist files if any,
-   * store data temporarily, and send a verification OTP.
+   * Step 1 of registration: validate uniqueness, store pending data
+   * (including multer temp file paths), and send a verification OTP.
    * The user record is NOT written to the DB yet.
+   *
+   * Parent-specific validation: student_ids and at least one file are
+   * required when role is "Parent" (or when student_ids is supplied,
+   * which implies a parent registration).
    */
   async initiateRegistration(userData, files = []) {
     const {
@@ -62,18 +82,37 @@ const authService = {
       student_ids,
     } = userData;
 
+    const resolvedRole = role || (student_ids ? "Parent" : undefined);
+
+    // Parents must supply at least one student and at least one supporting file
+    if (resolvedRole === "Parent") {
+      if (!student_ids || student_ids.length === 0) {
+        throw new Error("Parents must provide at least one student ID");
+      }
+      if (!files || files.length === 0) {
+        throw new Error("Parents must upload at least one supporting document");
+      }
+    }
+
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
+      // Clean up any uploaded temp files — they will never be used
+      cleanupTempFiles({ filePaths: files.map((f) => ({ path: f.path })) });
       throw new Error("User with this email already exists");
     }
 
     if (getPendingRegistration(email)) {
+      // Clean up newly uploaded temp files — a pending entry already holds
+      // a previous set of temp files for this email
+      cleanupTempFiles({ filePaths: files.map((f) => ({ path: f.path })) });
       throw new Error(
         "A verification email was already sent. Please check your inbox.",
       );
     }
 
     const hashedPassword = await hashPassword(password);
+    const otpCode = generateOTP();
+    const otpExpiresAt = Date.now() + PENDING_TTL_MS;
 
     storePendingRegistration(email, {
       email,
@@ -82,8 +121,13 @@ const authService = {
       lname,
       contact_num,
       address,
-      role: role || (student_ids ? "Parent" : undefined),
+      role: resolvedRole,
       student_ids,
+      otpCode,
+      otpExpiresAt,
+      // Store file metadata including the temp path so we can
+      // (a) upload to Supabase on OTP verification, and
+      // (b) clean up temp files on expiry or failure
       filePaths: files.map((f) => ({
         originalname: f.originalname,
         path: f.path,
@@ -92,17 +136,9 @@ const authService = {
       })),
     });
 
-    const otpCode = generateOTP();
-    const expiresAt = new Date(Date.now() + PENDING_TTL_MS);
-
-    storePendingRegistration(email, {
-      ...getPendingRegistration(email),
-      otpCode,
-      otpExpiresAt: expiresAt.getTime(),
-    });
-
     const emailSent = await sendOTPEmail(email, otpCode);
     if (!emailSent) {
+      cleanupTempFiles(getPendingRegistration(email));
       clearPendingRegistration(email);
       throw new Error("Failed to send OTP email");
     }
@@ -116,33 +152,28 @@ const authService = {
   /**
    * Step 2 of registration: verify OTP then finalise account creation.
    *
-   * DB write order is dictated by FK constraints — every step depends on the
-   * row created by the step before it:
+   * The existingUser check is intentionally placed BEFORE the pending check
+   * so that retries (lost response, double-submit) return the correct error
+   * instead of "No pending registration found".
    *
+   * DB write order is dictated by FK constraints:
    *   1. prisma.user.create
-   *        → User row exists; its user_id can now be used as a FK.
-   *
-   *   2. prisma.userRole_Model.create  (if a role was supplied)
-   *        → user_id FK satisfied by step 1.
-   *
-   *   3. parentsService.createFiles(pending.filePaths, user.user_id)
-   *        → Uploads each file to Supabase Storage, receives a permanent
-   *          public URL, and writes a File row with:
-   *            file_path  = public URL   (readable immediately, no signing)
-   *            uploaded_by = user.user_id (FK → User — satisfied by step 1)
-   *        → Returns the created File rows including their file_ids.
-   *
-   *   4. parentsService.submitRegistration({ parent_id, student_ids, file_ids })
-   *        → Creates ParentRegistration  (parent_id FK → User — step 1)
-   *        → Creates ParentChildFile rows (file_id FK → File — step 3,
-   *                                        pr_id FK → ParentRegistration — same tx)
-   *
-   *   5. prisma.userTrustedDevice.create
-   *        → user_id FK → User — step 1.
+   *   2. prisma.userRole_Model.create     (user_id FK → step 1)
+   *   3. parentsService.createFiles       (uploaded_by FK → step 1)
+   *   4. parentsService.submitRegistration (parent_id FK → step 1,
+   *                                         file_id FK → step 3)
+   *   5. prisma.userTrustedDevice.create  (user_id FK → step 1)
    *
    * Returns the RAW deviceToken to the client; only the hash is stored in DB.
    */
   async verifyRegistrationOTP(email, otpCode, parentsService) {
+    // Check this FIRST — handles retries where the 1st call succeeded
+    // but the response was lost (double-submit, network drop, etc.)
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      throw new Error("Email already registered. Please log in instead.");
+    }
+
     const pending = getPendingRegistration(email);
     if (!pending) {
       throw new Error(
@@ -151,28 +182,21 @@ const authService = {
     }
 
     if (Date.now() > pending.otpExpiresAt) {
+      cleanupTempFiles(pending);
       clearPendingRegistration(email);
       throw new Error("Invalid or expired OTP");
     }
 
     if (pending.otpCode !== otpCode) {
+      // Do NOT clean up temp files here — the user may retry with the correct OTP
       throw new Error("Invalid or expired OTP");
     }
 
-    // Clear the pending entry immediately after the OTP is accepted.
-    // This must happen BEFORE any DB writes so that a second submission of
-    // the same OTP (e.g. double-click, network retry) finds no pending entry
-    // and gets a "No pending registration found" error instead of racing into
-    // prisma.user.create and hitting a unique constraint violation (P2002).
+    // Clear the pending entry immediately after the OTP is accepted so that
+    // a second submission of the same OTP finds no pending entry and gets
+    // "No pending registration found" instead of racing into prisma.user.create.
+    // NOTE: temp files are NOT cleaned up here — they are still needed for upload.
     clearPendingRegistration(email);
-
-    // Guard: if a previous attempt already created the user (e.g. the DB
-    // write succeeded but the response was lost), return a clear error instead
-    // of letting Prisma throw a cryptic unique constraint failure.
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      throw new Error("Email already registered. Please log in instead.");
-    }
 
     const user = await prisma.user.create({
       data: {
@@ -204,21 +228,24 @@ const authService = {
 
     if (pending.role === "Parent" && pending.student_ids && parentsService) {
       let file_ids;
-      if (pending.filePaths.length > 0) {
+
+      if (pending.filePaths && pending.filePaths.length > 0) {
+        // createFiles uploads all files to Supabase in parallel and persists
+        // File rows in a single DB round-trip. Temp files are deleted by
+        // uploadFile() after each successful Supabase upload.
         const created = await parentsService.createFiles(
           pending.filePaths,
           user.user_id,
         );
         file_ids = created.map((f) => f.file_id);
       }
+
       await parentsService.submitRegistration({
         parent_id: user.user_id,
         student_ids: pending.student_ids,
         file_ids,
       });
     }
-
-    clearPendingRegistration(email); // already called above — kept as no-op safety net
 
     // Generate raw token for client; store only the hash in DB
     const rawToken = generateDeviceToken();
@@ -357,14 +384,6 @@ const authService = {
     return { token, user: userWithoutPassword, deviceToken: rawToken };
   },
 
-  /**
-   * ✅ FIX: Removed redundant prisma.user.findUnique check.
-   *
-   * This method is only reachable via the `authenticate` middleware, which
-   * already verifies the token, confirms the user exists in the DB, and
-   * attaches the full user object to req.user. A second DB round-trip here
-   * to check the same thing is wasteful and adds no safety.
-   */
   async getTrustedDevices(userId) {
     return prisma.userTrustedDevice.findMany({
       where: { user_id: userId },
@@ -372,13 +391,6 @@ const authService = {
     });
   },
 
-  /**
-   * ✅ FIX: Removed redundant prisma.user.findUnique check (same reason as above).
-   *
-   * The device ownership check (`user_id: userId` in the where clause) already
-   * implicitly guarantees we only touch devices belonging to the authenticated
-   * user. The prior explicit user lookup added nothing.
-   */
   async removeTrustedDevice(userId, tdId) {
     const device = await prisma.userTrustedDevice.findFirst({
       where: { td_id: tdId, user_id: userId },
