@@ -62,7 +62,7 @@ router.post(
   authController.login,
 );
 
-// ─── OTP (general-purpose / post-login MFA) ─────────────────────────────────
+// ─── OTP (post-login MFA) ────────────────────────────────────────────────────
 
 router.post(
   "/send-otp",
@@ -70,6 +70,7 @@ router.post(
   validate,
   authController.sendOTP,
 );
+
 router.post(
   "/verify-otp",
   [
@@ -78,6 +79,52 @@ router.post(
   ],
   validate,
   authController.verifyOTP,
+);
+
+// ─── Password Reset (public — no auth required) ──────────────────────────────
+
+/**
+ * POST /api/auth/forgot-password
+ * Body: { email }
+ *
+ * Sends a password reset link to the given email if an account exists.
+ * Always returns 200 to prevent email enumeration.
+ */
+router.post(
+  "/forgot-password",
+  [
+    body("email")
+      .isEmail()
+      .withMessage("A valid email address is required")
+      .normalizeEmail(),
+  ],
+  validate,
+  authController.forgotPassword,
+);
+
+/**
+ * POST /api/auth/reset-password
+ * Body: { token, newPassword }
+ *
+ * Validates the reset token (from the emailed link) and updates the password.
+ * The token is single-use and expires after 1 hour.
+ */
+router.post(
+  "/reset-password",
+  [
+    body("token")
+      .notEmpty()
+      .withMessage("Reset token is required")
+      .isHexadecimal()
+      .withMessage("Invalid reset token format")
+      .isLength({ min: 64, max: 64 })
+      .withMessage("Invalid reset token length"),
+    body("newPassword")
+      .isLength({ min: 8 })
+      .withMessage("New password must be at least 8 characters"),
+  ],
+  validate,
+  authController.resetPassword,
 );
 
 // ─── Authenticated routes ────────────────────────────────────────────────────

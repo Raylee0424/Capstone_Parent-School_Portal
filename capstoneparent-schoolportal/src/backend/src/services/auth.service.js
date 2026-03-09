@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
+const crypto = require("crypto");
 const prisma = require("../config/database");
 const {
   hashPassword,
@@ -8,18 +9,37 @@ const {
   generateDeviceToken,
   hashDeviceToken,
 } = require("../utils/hashUtil");
-const { sendOTPEmail } = require("../utils/emailUtil");
+const { sendOTPEmail, sendPasswordResetEmail } = require("../utils/emailUtil");
 
-// Temporary store for pending registrations (keyed by email, TTL = 10 min)
+// ─── Pending Registrations Store ────────────────────────────────────────────
 const pendingRegistrations = new Map();
-
 const PENDING_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
+// ─── Password Reset Token Store ─────────────────────────────────────────────
+// Two maps are kept in sync so that:
+//   • A new request for the same email invalidates the previous token immediately.
+//   • Token lookup is O(1) on the hot path (verify).
+//
+//   passwordResetTokens : token  → { email, expiresAt }
+//   passwordResetByEmail: email  → token  (for single-token-per-email enforcement)
+const passwordResetTokens = new Map();
+const passwordResetByEmail = new Map();
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+
 /**
- * Delete all multer temp files stored in a pending registration entry.
- * Called on expiry, wrong OTP, or any failure after files were stored.
- * Silent — a missing temp file is not an error.
+ * Remove an existing reset token for the given email (if any).
+ * Called before issuing a fresh token so there is at most one live token per user.
  */
+function invalidateResetToken(email) {
+  const oldToken = passwordResetByEmail.get(email);
+  if (oldToken) {
+    passwordResetTokens.delete(oldToken);
+    passwordResetByEmail.delete(email);
+  }
+}
+
+// ─── Pending Registration Helpers ───────────────────────────────────────────
+
 function cleanupTempFiles(pending) {
   if (!pending?.filePaths?.length) return;
   for (const f of pending.filePaths) {
@@ -40,7 +60,7 @@ function getPendingRegistration(email) {
   const entry = pendingRegistrations.get(email);
   if (!entry) return null;
   if (Date.now() > entry.expiresAt) {
-    cleanupTempFiles(entry); // ← clean up temp files before dropping the entry
+    cleanupTempFiles(entry);
     pendingRegistrations.delete(email);
     return null;
   }
@@ -60,15 +80,13 @@ function signToken(user) {
   );
 }
 
+// ─── Auth Service ────────────────────────────────────────────────────────────
+
 const authService = {
   /**
    * Step 1 of registration: validate uniqueness, store pending data
    * (including multer temp file paths), and send a verification OTP.
    * The user record is NOT written to the DB yet.
-   *
-   * Parent-specific validation: student_ids and at least one file are
-   * required when role is "Parent" (or when student_ids is supplied,
-   * which implies a parent registration).
    */
   async initiateRegistration(userData, files = []) {
     const {
@@ -84,7 +102,6 @@ const authService = {
 
     const resolvedRole = role || (student_ids ? "Parent" : undefined);
 
-    // Parents must supply at least one student and at least one supporting file
     if (resolvedRole === "Parent") {
       if (!student_ids || student_ids.length === 0) {
         throw new Error("Parents must provide at least one student ID");
@@ -96,14 +113,11 @@ const authService = {
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      // Clean up any uploaded temp files — they will never be used
       cleanupTempFiles({ filePaths: files.map((f) => ({ path: f.path })) });
       throw new Error("User with this email already exists");
     }
 
     if (getPendingRegistration(email)) {
-      // Clean up newly uploaded temp files — a pending entry already holds
-      // a previous set of temp files for this email
       cleanupTempFiles({ filePaths: files.map((f) => ({ path: f.path })) });
       throw new Error(
         "A verification email was already sent. Please check your inbox.",
@@ -125,9 +139,6 @@ const authService = {
       student_ids,
       otpCode,
       otpExpiresAt,
-      // Store file metadata including the temp path so we can
-      // (a) upload to Supabase on OTP verification, and
-      // (b) clean up temp files on expiry or failure
       filePaths: files.map((f) => ({
         originalname: f.originalname,
         path: f.path,
@@ -151,24 +162,8 @@ const authService = {
 
   /**
    * Step 2 of registration: verify OTP then finalise account creation.
-   *
-   * The existingUser check is intentionally placed BEFORE the pending check
-   * so that retries (lost response, double-submit) return the correct error
-   * instead of "No pending registration found".
-   *
-   * DB write order is dictated by FK constraints:
-   *   1. prisma.user.create
-   *   2. prisma.userRole_Model.create     (user_id FK → step 1)
-   *   3. parentsService.createFiles       (uploaded_by FK → step 1)
-   *   4. parentsService.submitRegistration (parent_id FK → step 1,
-   *                                         file_id FK → step 3)
-   *   5. prisma.userTrustedDevice.create  (user_id FK → step 1)
-   *
-   * Returns the RAW deviceToken to the client; only the hash is stored in DB.
    */
   async verifyRegistrationOTP(email, otpCode, parentsService) {
-    // Check this FIRST — handles retries where the 1st call succeeded
-    // but the response was lost (double-submit, network drop, etc.)
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       throw new Error("Email already registered. Please log in instead.");
@@ -188,14 +183,9 @@ const authService = {
     }
 
     if (pending.otpCode !== otpCode) {
-      // Do NOT clean up temp files here — the user may retry with the correct OTP
       throw new Error("Invalid or expired OTP");
     }
 
-    // Clear the pending entry immediately after the OTP is accepted so that
-    // a second submission of the same OTP finds no pending entry and gets
-    // "No pending registration found" instead of racing into prisma.user.create.
-    // NOTE: temp files are NOT cleaned up here — they are still needed for upload.
     clearPendingRegistration(email);
 
     const user = await prisma.user.create({
@@ -228,18 +218,13 @@ const authService = {
 
     if (pending.role === "Parent" && pending.student_ids && parentsService) {
       let file_ids;
-
       if (pending.filePaths && pending.filePaths.length > 0) {
-        // createFiles uploads all files to Supabase in parallel and persists
-        // File rows in a single DB round-trip. Temp files are deleted by
-        // uploadFile() after each successful Supabase upload.
         const created = await parentsService.createFiles(
           pending.filePaths,
           user.user_id,
         );
         file_ids = created.map((f) => f.file_id);
       }
-
       await parentsService.submitRegistration({
         parent_id: user.user_id,
         student_ids: pending.student_ids,
@@ -247,7 +232,6 @@ const authService = {
       });
     }
 
-    // Generate raw token for client; store only the hash in DB
     const rawToken = generateDeviceToken();
     await prisma.userTrustedDevice.create({
       data: {
@@ -266,12 +250,7 @@ const authService = {
   },
 
   /**
-   * Login flow:
-   *   - Always validate email + password first.
-   *   - If a deviceToken is supplied and matches a trusted device in the DB,
-   *     issue a JWT immediately (trusted device bypass).
-   *   - Otherwise return { requiresOTP: true } — the client must complete
-   *     the OTP challenge via POST /send-otp then POST /verify-otp.
+   * Login flow — trusted device bypass or OTP challenge.
    */
   async login(email, password, deviceToken) {
     const user = await prisma.user.findUnique({
@@ -293,7 +272,6 @@ const authService = {
       throw new Error("Invalid email or password");
     }
 
-    // Check for a matching trusted device
     if (deviceToken) {
       const hashedToken = hashDeviceToken(deviceToken);
       const trustedDevice = await prisma.userTrustedDevice.findFirst({
@@ -301,7 +279,6 @@ const authService = {
       });
 
       if (trustedDevice) {
-        // Refresh last_used_at
         await prisma.userTrustedDevice.update({
           where: { td_id: trustedDevice.td_id },
           data: { last_used_at: new Date() },
@@ -313,7 +290,6 @@ const authService = {
       }
     }
 
-    // No valid trusted device — caller must complete OTP
     return { requiresOTP: true };
   },
 
@@ -340,7 +316,6 @@ const authService = {
 
   /**
    * Verify OTP, issue a JWT, and register a new trusted device.
-   * Returns the RAW deviceToken to the client; the hash is stored in DB.
    */
   async verifyOTP(email, otpCode) {
     const user = await prisma.user.findUnique({
@@ -368,7 +343,6 @@ const authService = {
       data: { used: true },
     });
 
-    // Register this device as trusted
     const rawToken = generateDeviceToken();
     await prisma.userTrustedDevice.create({
       data: {
@@ -383,6 +357,99 @@ const authService = {
 
     return { token, user: userWithoutPassword, deviceToken: rawToken };
   },
+
+  // ─── Password Reset ────────────────────────────────────────────────────────
+
+  /**
+   * POST /auth/forgot-password
+   *
+   * Generates a secure reset token, stores it in memory with a 1-hour TTL,
+   * then emails a signed reset link to the user.
+   *
+   * Security note: we always return success even if the email is not found.
+   * This prevents user-enumeration attacks — attackers should not be able to
+   * tell whether an email address is registered.
+   */
+  async forgotPassword(email) {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Silently succeed for unknown addresses (anti-enumeration)
+    if (!user) return true;
+
+    // Invalidate any live token for this email before issuing a new one
+    invalidateResetToken(email);
+
+    // Cryptographically random 32-byte hex token
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const expiresAt = Date.now() + RESET_TOKEN_TTL_MS;
+
+    // Persist in both maps
+    passwordResetTokens.set(rawToken, { email, expiresAt });
+    passwordResetByEmail.set(email, rawToken);
+
+    const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password?token=${rawToken}`;
+
+    const emailSent = await sendPasswordResetEmail(email, resetLink);
+    if (!emailSent) {
+      // Roll back the stored token — the link was never delivered
+      passwordResetTokens.delete(rawToken);
+      passwordResetByEmail.delete(email);
+      throw new Error("Failed to send password reset email");
+    }
+
+    return true;
+  },
+
+  /**
+   * POST /auth/reset-password
+   *
+   * Validates the reset token and replaces the user's password.
+   * The token is deleted immediately after a successful reset so it
+   * cannot be replayed.
+   *
+   * @param {string} token       — raw token from the reset link query string
+   * @param {string} newPassword — plain-text password chosen by the user
+   */
+  async resetPassword(token, newPassword) {
+    const entry = passwordResetTokens.get(token);
+
+    // Token not found or already consumed
+    if (!entry) {
+      throw new Error("Invalid or expired reset token");
+    }
+
+    // Token found but past its TTL
+    if (Date.now() > entry.expiresAt) {
+      passwordResetTokens.delete(token);
+      passwordResetByEmail.delete(entry.email);
+      throw new Error("Invalid or expired reset token");
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: entry.email },
+    });
+    if (!user) {
+      // Should not normally happen, but clean up and surface an error
+      passwordResetTokens.delete(token);
+      passwordResetByEmail.delete(entry.email);
+      throw new Error("User not found");
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await prisma.user.update({
+      where: { user_id: user.user_id },
+      data: { password: hashedPassword },
+    });
+
+    // Consume the token — one-time use only
+    passwordResetTokens.delete(token);
+    passwordResetByEmail.delete(entry.email);
+
+    return true;
+  },
+
+  // ─── Trusted Devices ──────────────────────────────────────────────────────
 
   async getTrustedDevices(userId) {
     return prisma.userTrustedDevice.findMany({

@@ -73,8 +73,6 @@ const authController = {
       ) {
         return res.status(409).json({ message: error.message });
       }
-      // Triggered when a previous OTP submission already created the user
-      // but the client retried (e.g. double-submit, lost response).
       if (
         error.message === "Email already registered. Please log in instead."
       ) {
@@ -90,7 +88,6 @@ const authController = {
    * Two possible outcomes:
    *   1. Trusted device supplied → JWT issued immediately, cookie set.
    *   2. Unknown/missing device  → { requiresOTP: true } returned.
-   *      Client must call POST /send-otp then POST /verify-otp to complete login.
    */
   async login(req, res, next) {
     try {
@@ -136,8 +133,6 @@ const authController = {
   /**
    * POST /verify-otp
    * Completes the OTP challenge after an untrusted-device login.
-   * Issues a JWT, sets the auth cookie, and returns the new raw deviceToken
-   * for the client to store and supply on future logins.
    */
   async verifyOTP(req, res, next) {
     try {
@@ -197,6 +192,77 @@ const authController = {
       res.status(200).json({ message: "Trusted device removed" });
     } catch (error) {
       if (error.message === "Trusted device not found") {
+        return res.status(404).json({ message: error.message });
+      }
+      next(error);
+    }
+  },
+
+  // ─── Password Reset ────────────────────────────────────────────────────────
+
+  /**
+   * POST /auth/forgot-password
+   *
+   * Accepts an email address and sends a password reset link if the account
+   * exists. Always responds 200 regardless of whether the email is registered
+   * to prevent user enumeration.
+   *
+   * Request body:
+   *   { "email": "user@example.com" }
+   *
+   * Success response (200):
+   *   { "message": "If that email is registered, a reset link has been sent." }
+   *
+   * Error responses:
+   *   502 — email provider failure
+   */
+  async forgotPassword(req, res, next) {
+    try {
+      const { email } = req.body;
+      await authService.forgotPassword(email);
+
+      // Always return the same message to prevent email enumeration
+      res.status(200).json({
+        message:
+          "If that email is registered, a password reset link has been sent. The link expires in 1 hour.",
+      });
+    } catch (error) {
+      if (error.message === "Failed to send password reset email") {
+        return res.status(502).json({ message: error.message });
+      }
+      next(error);
+    }
+  },
+
+  /**
+   * POST /auth/reset-password
+   *
+   * Validates the reset token from the link and updates the user's password.
+   *
+   * Request body:
+   *   { "token": "<raw token from link>", "newPassword": "newSecurePass123" }
+   *
+   * Success response (200):
+   *   { "message": "Password has been reset successfully. Please log in." }
+   *
+   * Error responses:
+   *   400 — token or newPassword missing / newPassword too short (validation)
+   *   401 — token is invalid or has expired
+   *   404 — user no longer exists
+   */
+  async resetPassword(req, res, next) {
+    try {
+      const { token, newPassword } = req.body;
+      await authService.resetPassword(token, newPassword);
+
+      res.status(200).json({
+        message: "Password has been reset successfully. Please log in.",
+      });
+    } catch (error) {
+      if (error.message === "Invalid or expired reset token") {
+        return res.status(401).json({ message: error.message });
+      }
+      if (error.message === "User not found") {
         return res.status(404).json({ message: error.message });
       }
       next(error);
