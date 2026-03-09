@@ -16,20 +16,10 @@ const pendingRegistrations = new Map();
 const PENDING_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 // ─── Password Reset Token Store ─────────────────────────────────────────────
-// Two maps are kept in sync so that:
-//   • A new request for the same email invalidates the previous token immediately.
-//   • Token lookup is O(1) on the hot path (verify).
-//
-//   passwordResetTokens : token  → { email, expiresAt }
-//   passwordResetByEmail: email  → token  (for single-token-per-email enforcement)
 const passwordResetTokens = new Map();
 const passwordResetByEmail = new Map();
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
-/**
- * Remove an existing reset token for the given email (if any).
- * Called before issuing a fresh token so there is at most one live token per user.
- */
 function invalidateResetToken(email) {
   const oldToken = passwordResetByEmail.get(email);
   if (oldToken) {
@@ -162,6 +152,9 @@ const authService = {
 
   /**
    * Step 2 of registration: verify OTP then finalise account creation.
+   *
+   * Returns the raw deviceToken so the client can store it and pass it
+   * on every future POST /login request — skipping OTP on known devices.
    */
   async verifyRegistrationOTP(email, otpCode, parentsService) {
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -232,6 +225,8 @@ const authService = {
       });
     }
 
+    // Issue the first trusted device token — client stores this raw value
+    // and sends it with every POST /login going forward
     const rawToken = generateDeviceToken();
     await prisma.userTrustedDevice.create({
       data: {
@@ -249,14 +244,37 @@ const authService = {
     };
   },
 
+  // ─── Login ─────────────────────────────────────────────────────────────────
   /**
-   * Login flow — trusted device bypass or OTP challenge.
+   * POST /auth/login
+   *
+   * Requires email + password + deviceToken.
+   * Always returns a JWT when all three are valid.
+   *
+   * ┌─────────────────────────────────────────────────────────────────────┐
+   * │  FIRST LOGIN / NEW DEVICE (no deviceToken yet)                      │
+   * │                                                                     │
+   * │  1. POST /auth/send-otp   { email }                                 │
+   * │  2. POST /auth/verify-otp { email, otpCode }                        │
+   * │     ← returns { token, user, deviceToken }                          │
+   * │  3. Store deviceToken in the client (localStorage / secure store)   │
+   * │  4. All future logins use POST /auth/login with that deviceToken     │
+   * └─────────────────────────────────────────────────────────────────────┘
+   *
+   * Errors:
+   *   "Invalid email or password"            — wrong credentials
+   *   "Account is inactive"                  — not yet activated by admin
+   *   "Device token is required"             — field missing from body
+   *   "Unrecognized device. Please complete OTP verification."
+   *                                          — token not in trusted table
    */
   async login(email, password, deviceToken) {
+    // 1. Validate credentials
     const user = await prisma.user.findUnique({
       where: { email },
       include: { roles: true },
     });
+
     if (!user) {
       throw new Error("Invalid email or password");
     }
@@ -272,27 +290,41 @@ const authService = {
       throw new Error("Invalid email or password");
     }
 
-    if (deviceToken) {
-      const hashedToken = hashDeviceToken(deviceToken);
-      const trustedDevice = await prisma.userTrustedDevice.findFirst({
-        where: { user_id: user.user_id, device_token: hashedToken },
-      });
-
-      if (trustedDevice) {
-        await prisma.userTrustedDevice.update({
-          where: { td_id: trustedDevice.td_id },
-          data: { last_used_at: new Date() },
-        });
-
-        const token = signToken(user);
-        const { password: _, ...userWithoutPassword } = user;
-        return { token, user: userWithoutPassword };
-      }
+    // 2. Require a device token — clients without one must go through OTP first
+    if (!deviceToken) {
+      throw new Error("Device token is required");
     }
 
-    return { requiresOTP: true };
+    // 3. Verify the device token against trusted devices
+    const hashedToken = hashDeviceToken(deviceToken);
+    const trustedDevice = await prisma.userTrustedDevice.findFirst({
+      where: { user_id: user.user_id, device_token: hashedToken },
+    });
+
+    if (!trustedDevice) {
+      throw new Error(
+        "Unrecognized device. Please complete OTP verification to register this device.",
+      );
+    }
+
+    // 4. Refresh last_used_at timestamp
+    await prisma.userTrustedDevice.update({
+      where: { td_id: trustedDevice.td_id },
+      data: { last_used_at: new Date() },
+    });
+
+    // 5. Issue and return JWT
+    const token = signToken(user);
+    const { password: _, ...userWithoutPassword } = user;
+
+    return { token, user: userWithoutPassword };
   },
 
+  // ─── OTP — New Device Registration ──────────────────────────────────────────
+  /**
+   * Step 1: Send OTP to the user's email.
+   * Used when the client has no deviceToken (first login or new device).
+   */
   async sendOTP(email) {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -315,7 +347,11 @@ const authService = {
   },
 
   /**
-   * Verify OTP, issue a JWT, and register a new trusted device.
+   * Step 2: Verify OTP, issue JWT, and register this as a trusted device.
+   *
+   * Returns { token, user, deviceToken }.
+   * The client MUST persist the raw deviceToken and include it in all
+   * future POST /auth/login requests.
    */
   async verifyOTP(email, otpCode) {
     const user = await prisma.user.findUnique({
@@ -343,6 +379,7 @@ const authService = {
       data: { used: true },
     });
 
+    // Register this device as trusted
     const rawToken = generateDeviceToken();
     await prisma.userTrustedDevice.create({
       data: {
@@ -360,38 +397,22 @@ const authService = {
 
   // ─── Password Reset ────────────────────────────────────────────────────────
 
-  /**
-   * POST /auth/forgot-password
-   *
-   * Generates a secure reset token, stores it in memory with a 1-hour TTL,
-   * then emails a signed reset link to the user.
-   *
-   * Security note: we always return success even if the email is not found.
-   * This prevents user-enumeration attacks — attackers should not be able to
-   * tell whether an email address is registered.
-   */
   async forgotPassword(email) {
     const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return true; // silent — do not reveal whether email exists
 
-    // Silently succeed for unknown addresses (anti-enumeration)
-    if (!user) return true;
-
-    // Invalidate any live token for this email before issuing a new one
     invalidateResetToken(email);
 
-    // Cryptographically random 32-byte hex token
     const rawToken = crypto.randomBytes(32).toString("hex");
     const expiresAt = Date.now() + RESET_TOKEN_TTL_MS;
 
-    // Persist in both maps
     passwordResetTokens.set(rawToken, { email, expiresAt });
     passwordResetByEmail.set(email, rawToken);
 
-    const resetLink = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password?token=${rawToken}`;
+    const resetLink = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${rawToken}`;
 
     const emailSent = await sendPasswordResetEmail(email, resetLink);
     if (!emailSent) {
-      // Roll back the stored token — the link was never delivered
       passwordResetTokens.delete(rawToken);
       passwordResetByEmail.delete(email);
       throw new Error("Failed to send password reset email");
@@ -400,25 +421,13 @@ const authService = {
     return true;
   },
 
-  /**
-   * POST /auth/reset-password
-   *
-   * Validates the reset token and replaces the user's password.
-   * The token is deleted immediately after a successful reset so it
-   * cannot be replayed.
-   *
-   * @param {string} token       — raw token from the reset link query string
-   * @param {string} newPassword — plain-text password chosen by the user
-   */
   async resetPassword(token, newPassword) {
     const entry = passwordResetTokens.get(token);
 
-    // Token not found or already consumed
     if (!entry) {
       throw new Error("Invalid or expired reset token");
     }
 
-    // Token found but past its TTL
     if (Date.now() > entry.expiresAt) {
       passwordResetTokens.delete(token);
       passwordResetByEmail.delete(entry.email);
@@ -429,20 +438,17 @@ const authService = {
       where: { email: entry.email },
     });
     if (!user) {
-      // Should not normally happen, but clean up and surface an error
       passwordResetTokens.delete(token);
       passwordResetByEmail.delete(entry.email);
       throw new Error("User not found");
     }
 
     const hashedPassword = await hashPassword(newPassword);
-
     await prisma.user.update({
       where: { user_id: user.user_id },
       data: { password: hashedPassword },
     });
 
-    // Consume the token — one-time use only
     passwordResetTokens.delete(token);
     passwordResetByEmail.delete(entry.email);
 

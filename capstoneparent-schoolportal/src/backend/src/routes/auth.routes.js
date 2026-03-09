@@ -39,6 +39,7 @@ router.post(
 );
 
 // Step 2: Verify OTP → create account as Inactive
+// Response includes the first deviceToken — client must store it
 router.post(
   "/verify-registration-otp",
   [
@@ -50,32 +51,57 @@ router.post(
 );
 
 // ─── Login ──────────────────────────────────────────────────────────────────
-
+// Requires email + password + deviceToken.
+// Returns a JWT immediately when all three are valid.
+//
+// No deviceToken yet? Complete the OTP flow first:
+//   POST /send-otp → POST /verify-otp → store the returned deviceToken
 router.post(
   "/login",
   [
-    body("email").isEmail().normalizeEmail(),
-    body("password").notEmpty(),
-    body("deviceToken").optional().isString().isLength({ min: 10 }),
+    body("email")
+      .isEmail()
+      .withMessage("A valid email address is required")
+      .normalizeEmail(),
+    body("password").notEmpty().withMessage("Password is required"),
+    body("deviceToken")
+      .notEmpty()
+      .withMessage("Device token is required")
+      .isString()
+      .withMessage("Device token must be a string")
+      .isLength({ min: 64, max: 64 })
+      .withMessage("Invalid device token format"),
   ],
   validate,
   authController.login,
 );
 
-// ─── OTP (post-login MFA) ────────────────────────────────────────────────────
-
+// ─── OTP — New Device / First Login ─────────────────────────────────────────
+// Step 1: Request OTP (email must belong to an existing account)
 router.post(
   "/send-otp",
-  [body("email").isEmail().normalizeEmail()],
+  [
+    body("email")
+      .isEmail()
+      .withMessage("A valid email address is required")
+      .normalizeEmail(),
+  ],
   validate,
   authController.sendOTP,
 );
 
+// Step 2: Verify OTP → get JWT + fresh deviceToken
+// Store the returned deviceToken — it is required for POST /login
 router.post(
   "/verify-otp",
   [
-    body("email").isEmail().normalizeEmail(),
-    body("otpCode").isLength({ min: 6, max: 6 }),
+    body("email")
+      .isEmail()
+      .withMessage("A valid email address is required")
+      .normalizeEmail(),
+    body("otpCode")
+      .isLength({ min: 6, max: 6 })
+      .withMessage("OTP must be exactly 6 digits"),
   ],
   validate,
   authController.verifyOTP,
@@ -83,13 +109,7 @@ router.post(
 
 // ─── Password Reset (public — no auth required) ──────────────────────────────
 
-/**
- * POST /api/auth/forgot-password
- * Body: { email }
- *
- * Sends a password reset link to the given email if an account exists.
- * Always returns 200 to prevent email enumeration.
- */
+// Request a reset link
 router.post(
   "/forgot-password",
   [
@@ -102,13 +122,7 @@ router.post(
   authController.forgotPassword,
 );
 
-/**
- * POST /api/auth/reset-password
- * Body: { token, newPassword }
- *
- * Validates the reset token (from the emailed link) and updates the password.
- * The token is single-use and expires after 1 hour.
- */
+// Submit new password using the token from the reset link
 router.post(
   "/reset-password",
   [

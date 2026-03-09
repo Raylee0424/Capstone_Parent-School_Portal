@@ -9,7 +9,7 @@ const COOKIE_OPTIONS = {
 
 const authController = {
   /**
-   * POST /register
+   * POST /auth/register
    * Validates data and sends a verification OTP. Does NOT write to the DB yet.
    */
   async register(req, res, next) {
@@ -22,7 +22,6 @@ const authController = {
       }
 
       const result = await authService.initiateRegistration(userData, files);
-
       res.status(200).json({ message: result.message });
     } catch (error) {
       if (error.message === "User with this email already exists") {
@@ -39,8 +38,9 @@ const authController = {
   },
 
   /**
-   * POST /verify-registration-otp
-   * Verifies the OTP and finalises account creation (status: Inactive).
+   * POST /auth/verify-registration-otp
+   * Verifies OTP and finalises account creation (status: Inactive).
+   * Returns the first deviceToken — client must store this for future logins.
    */
   async verifyRegistrationOTP(req, res, next) {
     try {
@@ -83,26 +83,47 @@ const authController = {
   },
 
   /**
-   * POST /login
+   * POST /auth/login
    *
-   * Two possible outcomes:
-   *   1. Trusted device supplied → JWT issued immediately, cookie set.
-   *   2. Unknown/missing device  → { requiresOTP: true } returned.
+   * Requires email, password, AND deviceToken.
+   * Returns a JWT immediately when all three are valid.
+   *
+   * If the client has no deviceToken yet (first login / new device), it must
+   * first complete:
+   *   POST /auth/send-otp  →  POST /auth/verify-otp
+   * which returns a JWT + fresh deviceToken to persist.
+   *
+   * Success response (200):
+   *   {
+   *     "message": "Login successful",
+   *     "data": {
+   *       "token": "<jwt>",
+   *       "user": { ... }
+   *     }
+   *   }
+   *
+   * Error responses:
+   *   401 — invalid credentials
+   *   403 — account inactive
+   *   400 — deviceToken missing
+   *   401 — unrecognized device (go through OTP flow)
    */
   async login(req, res, next) {
     try {
       const { email, password, deviceToken } = req.body;
       const result = await authService.login(email, password, deviceToken);
 
-      if (result.requiresOTP) {
-        return res.status(200).json({
-          message: "OTP required. Please check your email.",
-          data: { requiresOTP: true },
-        });
-      }
-
+      // Set JWT as an httpOnly cookie (for browser clients)
       res.cookie("token", result.token, COOKIE_OPTIONS);
-      res.status(200).json({ message: "Login successful", data: result });
+
+      // Also return it in the body so Postman / mobile clients can use it
+      res.status(200).json({
+        message: "Login successful",
+        data: {
+          token: result.token,
+          user: result.user,
+        },
+      });
     } catch (error) {
       if (error.message === "Invalid email or password") {
         return res.status(401).json({ message: error.message });
@@ -110,10 +131,21 @@ const authController = {
       if (error.message.startsWith("Account is inactive")) {
         return res.status(403).json({ message: error.message });
       }
+      if (error.message === "Device token is required") {
+        return res.status(400).json({ message: error.message });
+      }
+      if (error.message.startsWith("Unrecognized device")) {
+        return res.status(401).json({ message: error.message });
+      }
       next(error);
     }
   },
 
+  /**
+   * POST /auth/send-otp
+   * Sends a 6-digit OTP to the user's email.
+   * Used when the client has no deviceToken (first login or new device).
+   */
   async sendOTP(req, res, next) {
     try {
       const { email } = req.body;
@@ -131,8 +163,21 @@ const authController = {
   },
 
   /**
-   * POST /verify-otp
-   * Completes the OTP challenge after an untrusted-device login.
+   * POST /auth/verify-otp
+   * Verifies the OTP, issues a JWT, and registers this device as trusted.
+   *
+   * Success response (200):
+   *   {
+   *     "message": "OTP verified successfully",
+   *     "data": {
+   *       "token": "<jwt>",
+   *       "user": { ... },
+   *       "deviceToken": "<raw 64-char token — store this on the client>"
+   *     }
+   *   }
+   *
+   * The client MUST persist deviceToken and send it in all future
+   * POST /auth/login requests to bypass OTP.
    */
   async verifyOTP(req, res, next) {
     try {
@@ -200,28 +245,10 @@ const authController = {
 
   // ─── Password Reset ────────────────────────────────────────────────────────
 
-  /**
-   * POST /auth/forgot-password
-   *
-   * Accepts an email address and sends a password reset link if the account
-   * exists. Always responds 200 regardless of whether the email is registered
-   * to prevent user enumeration.
-   *
-   * Request body:
-   *   { "email": "user@example.com" }
-   *
-   * Success response (200):
-   *   { "message": "If that email is registered, a reset link has been sent." }
-   *
-   * Error responses:
-   *   502 — email provider failure
-   */
   async forgotPassword(req, res, next) {
     try {
       const { email } = req.body;
       await authService.forgotPassword(email);
-
-      // Always return the same message to prevent email enumeration
       res.status(200).json({
         message:
           "If that email is registered, a password reset link has been sent. The link expires in 1 hour.",
@@ -234,27 +261,10 @@ const authController = {
     }
   },
 
-  /**
-   * POST /auth/reset-password
-   *
-   * Validates the reset token from the link and updates the user's password.
-   *
-   * Request body:
-   *   { "token": "<raw token from link>", "newPassword": "newSecurePass123" }
-   *
-   * Success response (200):
-   *   { "message": "Password has been reset successfully. Please log in." }
-   *
-   * Error responses:
-   *   400 — token or newPassword missing / newPassword too short (validation)
-   *   401 — token is invalid or has expired
-   *   404 — user no longer exists
-   */
   async resetPassword(req, res, next) {
     try {
       const { token, newPassword } = req.body;
       await authService.resetPassword(token, newPassword);
-
       res.status(200).json({
         message: "Password has been reset successfully. Please log in.",
       });
