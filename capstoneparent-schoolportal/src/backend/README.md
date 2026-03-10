@@ -50,7 +50,7 @@ npm install
 npx prisma generate
 
 # Run migrations
-npx prisma migrate dev --name [migration_name]
+npx prisma migrate deploy --name [migration_name]
 
 # (Optional) Open Prisma Studio to view/edit data
 npx prisma studio
@@ -60,6 +60,7 @@ npx prisma studio
 
 ```bash
 # Run server
+cd to backend/src then
 node server.js
 
 ```
