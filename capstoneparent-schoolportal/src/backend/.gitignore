@@ -24,9 +24,6 @@ Thumbs.db
 *.swp
 *.swo
 
-# Prisma
-prisma/migrations/
-
 # Uploads
 uploads/
 /generated/prisma
