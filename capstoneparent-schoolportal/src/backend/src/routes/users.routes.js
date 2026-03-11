@@ -38,7 +38,34 @@ router.patch(
   usersController.updateUserStatus,
 );
 
-// Assign role (Admin only)
+// Bulk replace all roles for a user (Admin, Principal only)
+// Accepts a full roles array and replaces the user's current roles in one shot
+router.put(
+  "/:id/roles",
+  authorize("Admin", "Principal"),
+  [
+    param("id").isInt(),
+    body("roles")
+      .isArray({ min: 1 })
+      .withMessage("roles must be a non-empty array"),
+    body("roles.*")
+      .isIn([
+        "Parent",
+        "Librarian",
+        "Teacher",
+        "Admin",
+        "Principal",
+        "Vice_Principal",
+      ])
+      .withMessage(
+        "Each role must be one of: Parent, Librarian, Teacher, Admin, Principal, Vice_Principal",
+      ),
+  ],
+  validate,
+  usersController.updateRoles,
+);
+
+// Assign a single role (Admin, Principal only)
 router.post(
   "/:id/roles",
   authorize("Admin", "Principal"),
@@ -57,7 +84,7 @@ router.post(
   usersController.assignRole,
 );
 
-// Remove role (Admin only)
+// Remove a single role (Admin, Principal only)
 router.delete(
   "/:id/roles/:roleId",
   authorize("Admin", "Principal"),

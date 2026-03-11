@@ -30,7 +30,6 @@ const usersService = {
           contact_num: true,
           address: true,
           account_status: true,
-          photo_path: true,
           created_at: true,
           roles: true,
         },
@@ -63,7 +62,6 @@ const usersService = {
         contact_num: true,
         address: true,
         account_status: true,
-        photo_path: true,
         created_at: true,
         updated_at: true,
         roles: true,
@@ -78,7 +76,6 @@ const usersService = {
   },
 
   async updateUser(userId, updateData) {
-    // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { user_id: userId },
     });
@@ -86,7 +83,6 @@ const usersService = {
       throw new Error("User not found");
     }
 
-    // Check if new email is already taken by another user
     if (updateData.email && updateData.email !== existingUser.email) {
       const duplicateEmail = await prisma.user.findUnique({
         where: { email: updateData.email },
@@ -107,7 +103,6 @@ const usersService = {
         contact_num: true,
         address: true,
         account_status: true,
-        photo_path: true,
         updated_at: true,
       },
     });
@@ -116,7 +111,6 @@ const usersService = {
   },
 
   async updateUserStatus(userId, accountStatus) {
-    // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { user_id: userId },
     });
@@ -124,7 +118,6 @@ const usersService = {
       throw new Error("User not found");
     }
 
-    // Check if account is already in the requested status
     if (existingUser.account_status === accountStatus) {
       throw new Error(`User account is already ${accountStatus}`);
     }
@@ -144,8 +137,18 @@ const usersService = {
     return user;
   },
 
-  async assignRole(userId, role) {
-    // Check if user exists
+  /**
+   * Replace a user's roles entirely in a single transaction.
+   *
+   * Flow:
+   *   1. Verify user exists
+   *   2. Delete all existing role records for the user
+   *   3. Insert the new roles
+   *
+   * Using a transaction ensures the user is never left with no roles
+   * if something fails halfway through.
+   */
+  async updateRoles(userId, roles) {
     const existingUser = await prisma.user.findUnique({
       where: { user_id: userId },
     });
@@ -153,7 +156,40 @@ const usersService = {
       throw new Error("User not found");
     }
 
-    // Check if user already has this role
+    // Deduplicate roles in case the client sends duplicates
+    const uniqueRoles = [...new Set(roles)];
+
+    const updatedRoles = await prisma.$transaction(async (tx) => {
+      // Delete all current roles
+      await tx.userRole_Model.deleteMany({
+        where: { user_id: userId },
+      });
+
+      // Insert the new roles
+      await tx.userRole_Model.createMany({
+        data: uniqueRoles.map((role) => ({
+          user_id: userId,
+          role,
+        })),
+      });
+
+      // Return the full user with updated roles
+      return tx.userRole_Model.findMany({
+        where: { user_id: userId },
+      });
+    });
+
+    return updatedRoles;
+  },
+
+  async assignRole(userId, role) {
+    const existingUser = await prisma.user.findUnique({
+      where: { user_id: userId },
+    });
+    if (!existingUser) {
+      throw new Error("User not found");
+    }
+
     const existingRole = await prisma.userRole_Model.findFirst({
       where: { user_id: userId, role },
     });
@@ -169,7 +205,6 @@ const usersService = {
   },
 
   async removeRole(userId, roleId) {
-    // Check if the role record exists and belongs to the user
     const existingRole = await prisma.userRole_Model.findFirst({
       where: { ur_id: roleId, user_id: userId },
     });

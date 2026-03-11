@@ -81,6 +81,30 @@ const usersController = {
     }
   },
 
+  /**
+   * PUT /users/:id/roles
+   * Replaces all roles for a user in one request.
+   * Body: { "roles": ["Teacher", "Parent"] }
+   */
+  async updateRoles(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { roles } = req.body;
+
+      const updatedRoles = await usersService.updateRoles(parseInt(id), roles);
+
+      res.status(200).json({
+        message: "Roles updated successfully",
+        data: updatedRoles,
+      });
+    } catch (error) {
+      if (error.message === "User not found") {
+        return res.status(404).json({ message: error.message });
+      }
+      next(error);
+    }
+  },
+
   async assignRole(req, res, next) {
     try {
       const { id } = req.params;
