@@ -1,4 +1,11 @@
-export type UserRole = "admin" | "teacher" | "librarian" | "parent" | "staff";
+export type UserRole =
+  | "admin"
+  | "principal"
+  | "vice_principal"
+  | "teacher"
+  | "librarian"
+  | "parent"
+  | "staff";
 
 export interface AuthUser {
   email: string;
@@ -17,14 +24,16 @@ const VALID_USER_ROLES: UserRole[] = [
   "librarian",
   "parent",
   "staff",
+  "vice_principal",
+  "principal",
 ];
 
 // ─── Role mapping ─────────────────────────────────────────────────────────────
 // Backend roles → frontend roles
 const BACKEND_TO_FRONTEND_ROLE: Record<string, UserRole> = {
   admin: "admin",
-  principal: "admin",
-  vice_principal: "admin",
+  principal: "principal",
+  vice_principal: "vice_principal",
   teacher: "teacher",
   librarian: "librarian",
   parent: "parent",
@@ -116,6 +125,10 @@ export const getDefaultRouteForRole = (role: UserRole): string => {
       return "/parentview";
     case "admin":
       return "/adminview";
+    case "principal":
+      return "/principalview";
+    case "vice_principal":
+      return "/vpview";
     case "teacher":
       return "/teacherview";
     case "librarian":
