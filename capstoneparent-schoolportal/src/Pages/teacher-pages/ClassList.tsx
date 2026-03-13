@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Search, Download, Upload } from 'lucide-react';
+import { ArrowLeft, Search, Download, Upload, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useClassData } from '@/Pages/teacher-pages/hooks/useClassData';
 import type { ClassItem, SubjectItem, Student } from '@/Pages/teacher-pages/types';
@@ -472,11 +472,11 @@ export const ClassList = () => {
 
                       <div className="flex gap-3 flex-wrap justify-center md:justify-start">
                         <Button className="bg-(--button-green) hover:bg-green-700 text-white">
-                          <Upload className="mr-2 h-4 w-4" />
+                          <Download className="mr-2 h-4 w-4" />
                           Import Grade Sheet (.xlsx)
                         </Button>
                         <Button className="bg-(--button-green) hover:bg-green-700 text-white">
-                          <Download className="mr-2 h-4 w-4" />
+                          <Upload className="mr-2 h-4 w-4" />
                           Export Quarterly Grade Sheet (.xlsx)
                         </Button>
                         <Button className="bg-(--button-green) hover:bg-green-700 text-white">
@@ -484,7 +484,7 @@ export const ClassList = () => {
                           Download Grade Sheet Template (.xlsx)
                         </Button>
                         <Button className="bg-(--button-green) hover:bg-green-700 text-white">
-                          <Upload className="mr-2 h-4 w-4" />
+                          <Image className="mr-2 h-4 w-4" />
                           Upload Class Schedule Picture
                         </Button>
                       </div>

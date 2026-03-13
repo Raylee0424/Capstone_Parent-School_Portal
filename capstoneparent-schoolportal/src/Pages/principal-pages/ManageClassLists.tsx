@@ -8,7 +8,6 @@ import {
 } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Edit, X } from 'lucide-react';
 import {
   Dialog,
@@ -16,10 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useClassData } from '@/Pages/principal-pages/hooks/useClassData';
 import { addClass, updateClass } from '@/Pages/principal-pages/services/api';
-import type { ClassItem } from '@/Pages/principal-pages/types';
+import type { ClassItem, SubjectItem, Student } from '@/Pages/principal-pages/types';
 import { NavbarPrincipal } from '@/components/principal/NavbarPrincipal';
+import { Subjects } from '@/Pages/principal-pages/Subjects';
+import { StudentList } from '@/Pages/principal-pages/StudentList';
 
 export const ManageClassLists = () => {
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
@@ -32,6 +34,8 @@ export const ManageClassLists = () => {
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddSubjectModalOpen, setIsAddSubjectModalOpen] = useState(false);
+  const [isAssignAdviserModalOpen, setIsAssignAdviserModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -56,9 +60,13 @@ export const ManageClassLists = () => {
   // Use custom hook for data management
   const {
     classes,
+    subjects,
+    allStudents,
     sections,
     teachers,
     isLoadingClasses,
+    isLoadingSubjects,
+    isLoadingStudents,
     isLoadingSections,
     isLoadingTeachers,
     studentCountByClass,
@@ -80,6 +88,24 @@ export const ManageClassLists = () => {
     });
     return Array.from(yearsSet).sort().reverse();
   }, [classes]);
+
+  // Get subjects for selected class
+  const classSubjects = useMemo(() => {
+    if (!selectedClass) return [];
+    return subjects.filter(
+      (subject) =>
+        subject.grade === selectedClass.grade &&
+        subject.section === selectedClass.section &&
+        subject.start_year === selectedClass.start_year &&
+        subject.end_year === selectedClass.end_year
+    );
+  }, [selectedClass, subjects]);
+
+  // Get students for selected class
+  const classStudents = useMemo(() => {
+    if (!selectedClass) return [];
+    return allStudents.filter((student) => student.classId === selectedClass.id);
+  }, [selectedClass, allStudents]);
 
   // Handle opening Add Class modal
   const handleOpenAddModal = () => {
@@ -119,7 +145,7 @@ export const ManageClassLists = () => {
         teacher_id: addFormData.teacherId ? parseInt(addFormData.teacherId) : undefined,
       });
       
-      await reloadClasses(); // Reload the class list
+      await reloadClasses();
       setIsAddModalOpen(false);
     } catch (error) {
       console.error('Failed to add class:', error);
@@ -143,7 +169,7 @@ export const ManageClassLists = () => {
         teacher_id: editFormData.teacherId ? parseInt(editFormData.teacherId) : undefined,
       });
       
-      await reloadClasses(); // Reload the class list
+      await reloadClasses();
       setIsEditModalOpen(false);
     } catch (error) {
       console.error('Failed to update class:', error);
@@ -151,6 +177,39 @@ export const ManageClassLists = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handler functions for subjects and students
+  const handleAssignTeacher = (subject: SubjectItem) => {
+    console.log('Assign teacher to subject:', subject);
+    alert(`Assign teacher to ${subject.name}`);
+  };
+
+  const handleRemoveSubject = (subject: SubjectItem) => {
+    console.log('Remove subject:', subject);
+    if (confirm(`Remove ${subject.name} from this class?`)) {
+      // TODO: API call to remove subject
+    }
+  };
+
+  const handleRemoveStudent = (student: Student) => {
+    console.log('Remove student:', student);
+    if (confirm(`Remove ${student.name} from this class?`)) {
+      // TODO: API call to remove student
+    }
+  };
+
+  // Add these new handler functions after handleRemoveStudent
+  const handleImportStudents = () => {
+    console.log('Import students');
+    // TODO: Implement import functionality
+    alert('Import student list functionality will be implemented here');
+  };
+
+  const handleDownloadTemplate = () => {
+    console.log('Download template');
+    // TODO: Implement download template functionality
+    alert('Download template functionality will be implemented here');
   };
 
   // Generate year options (current year - 5 to current year + 5)
@@ -206,7 +265,6 @@ export const ManageClassLists = () => {
                   </SelectContent>
                 </Select>
 
-                {/* DYNAMIC SECTIONS */}
                 <Select value={section} onValueChange={setSection}>
                   <SelectTrigger className="bg-(--navbar-bg) border-none font-semibold">
                     <SelectValue placeholder="Section" />
@@ -221,7 +279,6 @@ export const ManageClassLists = () => {
                   </SelectContent>
                 </Select>
 
-                {/* DYNAMIC YEARS */}
                 <Select value={year} onValueChange={setYear}>
                   <SelectTrigger className="bg-(--navbar-bg) border-none font-semibold">
                     <SelectValue placeholder="Year" />
@@ -279,12 +336,10 @@ export const ManageClassLists = () => {
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      {/* Student Count */}
                       <span className="font-medium whitespace-nowrap">
                         {studentCountByClass[classItem.id] || 0} Students
                       </span>
                       
-                      {/* Edit Button */}
                       <button
                         onClick={(e) => handleEditClass(classItem, e)}
                         className={`p-2 rounded-full transition-colors ${
@@ -322,28 +377,47 @@ export const ManageClassLists = () => {
           ${isDetailView ? 'flex' : 'hidden md:flex'}
         `}>
           {selectedClass ? (
-            <div className="flex items-center justify-center h-full p-8">
-              <div className="text-center space-y-4">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {selectedClass.grade} - {selectedClass.section}
-                </h2>
-                <p className="text-gray-600">
-                  {selectedClass.start_year} - {selectedClass.end_year}
-                </p>
-                <p className="text-gray-500">
-                  {studentCountByClass[selectedClass.id] || 0} Students enrolled
-                </p>
-                {selectedClass.teacher_name && (
-                  <p className="text-gray-600">
-                    Class Adviser: {selectedClass.teacher_name}
-                  </p>
-                )}
-                <div className="pt-4">
-                  <p className="text-gray-400">
-                    Class details and management options will be displayed here
-                  </p>
-                </div>
-              </div>
+            <div className="h-full flex flex-col w-full">
+              <Tabs 
+                defaultValue="subjects" 
+                className="w-full h-full flex flex-col"
+              >
+                <TabsList className="w-full rounded-none rounded-t-xl bg-white p-0 border-b border-gray-200">
+                  <TabsTrigger value="subjects" className="flex-1 rounded-none data-[state=active]:bg-(--div-bg)">
+                    Subjects
+                  </TabsTrigger>
+                  <TabsTrigger value="students" className="flex-1 rounded-none data-[state=active]:bg-(--div-bg)">
+                    Student List
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* SUBJECTS TAB */}
+                <TabsContent value="subjects" className="flex-1 mt-0 overflow-hidden">
+                  <Subjects
+                    selectedClass={selectedClass}
+                    subjects={classSubjects}
+                    isLoadingSubjects={isLoadingSubjects}
+                    onBack={() => setSelectedClass(null)}
+                    onAssignTeacher={handleAssignTeacher}
+                    onRemoveSubject={handleRemoveSubject}
+                    onAddSubject={() => setIsAddSubjectModalOpen(true)}
+                    onAssignAdviser={() => setIsAssignAdviserModalOpen(true)}
+                  />
+                </TabsContent>
+
+                {/* STUDENT LIST TAB */}
+                {/* STUDENT LIST TAB */}
+                <TabsContent value="students" className="flex-1 mt-0 overflow-hidden">
+                  <StudentList
+                    students={classStudents}
+                    isLoadingStudents={isLoadingStudents}
+                    onBack={() => setSelectedClass(null)}
+                    onRemoveStudent={handleRemoveStudent}
+                    onImportStudents={handleImportStudents}
+                    onDownloadTemplate={handleDownloadTemplate}
+                  />
+                </TabsContent>
+              </Tabs>
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
